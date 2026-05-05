@@ -487,6 +487,10 @@ Status atual:
 - Paginas simples de erro 404 e 500 foram adicionadas.
 - O cadastro de conta exige usuario minimo e senha de pelo menos 8 caracteres.
 
+Pendencia pos-deploy:
+
+- Ajustar sugestoes de categorias por tipo: categorias do tipo `fixed` devem aparecer apenas em gastos fixos, categorias do tipo `variable` apenas em gastos variados, e categorias do tipo `both` em ambos.
+
 ### Versao 8 - Responsividade mobile avancada
 
 - Refinar a experiencia em celulares.
