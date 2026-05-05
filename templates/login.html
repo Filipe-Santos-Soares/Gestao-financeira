@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Gestao Financeira</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body class="auth-page">
+    <main class="auth-shell" aria-labelledby="loginTitle">
+      <section class="panel auth-panel">
+        <header class="panel-header">
+          <div>
+            <p class="eyebrow">Acesso opcional</p>
+            <h1 id="loginTitle">Login</h1>
+          </div>
+        </header>
+
+        <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
+          {% if error %}
+            <p class="status-message is-negative">{{ error }}</p>
+          {% endif %}
+
+          <label for="name">Usuario</label>
+          <input id="name" name="name" type="text" autocomplete="username" required>
+
+          <label for="password">Senha</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+          <button class="primary-button" type="submit">Entrar</button>
+          <a class="text-link" href="{{ url_for('index') }}">Continuar sem login</a>
+        </form>
+
+        <form class="auth-form auth-form-secondary" method="post" action="{{ url_for('auth.register') }}">
+          <div>
+            <p class="eyebrow">Nova conta</p>
+            <h2>Criar conta</h2>
+          </div>
+
+          {% if register_error %}
+            <p class="status-message is-negative">{{ register_error }}</p>
+          {% endif %}
+
+          <label for="registerName">Usuario</label>
+          <input id="registerName" name="name" type="text" autocomplete="username" required>
+
+          <label for="registerPassword">Senha</label>
+          <input id="registerPassword" name="password" type="password" autocomplete="new-password" required>
+
+          <label for="registerPasswordConfirmation">Confirmar senha</label>
+          <input id="registerPasswordConfirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
+
+          <button class="secondary-button" type="submit">Criar conta</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
