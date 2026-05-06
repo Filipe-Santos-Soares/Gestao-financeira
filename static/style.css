@@ -239,7 +239,7 @@ button:disabled {
 
 .dashboard {
   display: grid;
-  grid-template-rows: minmax(280px, 0.92fr) minmax(300px, 1fr);
+  grid-template-rows: auto auto auto;
   gap: 18px;
   min-height: calc(100vh - 92px);
   padding: 12px 32px 32px;
@@ -493,13 +493,13 @@ td input {
 .category-list {
   display: grid;
   gap: 8px;
-  max-height: 150px;
+  max-height: 118px;
   margin: 0;
-  padding: 2px 8px 22px 2px;
+  padding: 2px 8px 34px 2px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  scroll-padding-bottom: 22px;
+  scroll-padding-bottom: 34px;
   list-style: none;
 }
 
