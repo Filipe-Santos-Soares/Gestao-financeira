@@ -116,6 +116,24 @@ class SQLiteBudgetRepositoryTest(unittest.TestCase):
         self.assertEqual(len(categories), 1)
         self.assertEqual(categories[0].name, "Moradia")
 
+    def test_update_category(self):
+        user = self.repository.create_user("Usuario teste", "hash-simulado")
+        category = self.repository.create_category(user.id, "Casa", "fixed")
+
+        updated_category = self.repository.update_category(category.id, "Moradia", "both")
+
+        self.assertEqual(updated_category.name, "Moradia")
+        self.assertEqual(updated_category.type, "both")
+
+    def test_delete_category(self):
+        user = self.repository.create_user("Usuario teste", "hash-simulado")
+        category = self.repository.create_category(user.id, "Lazer", "variable")
+
+        deleted = self.repository.delete_category(category.id)
+
+        self.assertTrue(deleted)
+        self.assertEqual(self.repository.list_categories(user.id), [])
+
 
 if __name__ == "__main__":
     unittest.main()

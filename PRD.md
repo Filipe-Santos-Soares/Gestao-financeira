@@ -486,10 +486,10 @@ Status atual:
 - `Procfile` e `gunicorn` foram adicionados para execucao em ambiente hospedado.
 - Paginas simples de erro 404 e 500 foram adicionadas.
 - O cadastro de conta exige usuario minimo e senha de pelo menos 8 caracteres.
-
-Pendencia pos-deploy:
-
-- Ajustar sugestoes de categorias por tipo: categorias do tipo `fixed` devem aparecer apenas em gastos fixos, categorias do tipo `variable` apenas em gastos variados, e categorias do tipo `both` em ambos.
+- A aplicacao em producao usa PostgreSQL.
+- As sugestoes de categorias por tipo foram ajustadas: categorias `fixed` aparecem em gastos fixos, categorias `variable` aparecem em gastos variados, e categorias `both` aparecem em ambos.
+- Acoes mutaveis passam a exigir token CSRF.
+- As APIs de orcamento mensal validam mes e ano antes de acessar o banco.
 
 ### Versao 8 - Responsividade mobile avancada
 

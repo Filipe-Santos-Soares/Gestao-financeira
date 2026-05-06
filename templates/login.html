@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - Gestao Financeira</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=app_version) }}">
   </head>
   <body class="auth-page">
     <main class="auth-shell" aria-labelledby="loginTitle">
@@ -17,6 +17,7 @@
         </header>
 
         <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           {% if error %}
             <p class="status-message is-negative">{{ error }}</p>
           {% endif %}
@@ -32,6 +33,7 @@
         </form>
 
         <form class="auth-form auth-form-secondary" method="post" action="{{ url_for('auth.register') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div>
             <p class="eyebrow">Nova conta</p>
             <h2>Criar conta</h2>

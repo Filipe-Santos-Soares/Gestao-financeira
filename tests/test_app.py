@@ -1,5 +1,6 @@
 import unittest
 import tempfile
+import re
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,13 +15,25 @@ class AppTest(unittest.TestCase):
         app.config.update(TESTING=True)
         self.client = app.test_client()
 
+    def get_csrf_token(self):
+        response = self.client.get("/")
+        match = re.search(rb'name="csrf-token" content="([^"]+)"', response.data)
+
+        self.assertIsNotNone(match)
+
+        return match.group(1).decode()
+
+    def csrf_headers(self):
+        return {"X-CSRF-Token": self.get_csrf_token()}
+
     def test_index_loads(self):
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Gestao Financeira", response.data)
         self.assertIn(b"financeChart", response.data)
-        self.assertIn(b'<meta name="app-version" content="1.0">', response.data)
+        self.assertIn(b'<meta name="app-version" content="1.1">', response.data)
+        self.assertIn(b'name="csrf-token"', response.data)
         self.assertIn(b"Login", response.data)
         self.assertIn(b"Mes", response.data)
         self.assertIn(b"Ano", response.data)
@@ -55,11 +68,12 @@ class AppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
             initialize_database(database_path)
+            csrf_token = self.get_csrf_token()
 
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 response = self.client.post(
                     "/login",
-                    data={"name": "Usuario local", "password": "local"},
+                    data={"name": "Usuario local", "password": "local", "csrf_token": csrf_token},
                     follow_redirects=True,
                 )
 
@@ -71,11 +85,12 @@ class AppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
             initialize_database(database_path)
+            csrf_token = self.get_csrf_token()
 
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 response = self.client.post(
                     "/login",
-                    data={"name": "Usuario local", "password": "senha-errada"},
+                    data={"name": "Usuario local", "password": "senha-errada", "csrf_token": csrf_token},
                 )
 
             self.assertEqual(response.status_code, 401)
@@ -84,6 +99,7 @@ class AppTest(unittest.TestCase):
     def test_register_creates_user_and_logs_in(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
+            csrf_token = self.get_csrf_token()
 
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 response = self.client.post(
@@ -92,6 +108,7 @@ class AppTest(unittest.TestCase):
                         "name": "Nova conta",
                         "password": "senha-segura",
                         "password_confirmation": "senha-segura",
+                        "csrf_token": csrf_token,
                     },
                     follow_redirects=True,
                 )
@@ -104,6 +121,7 @@ class AppTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
             initialize_database(database_path)
+            csrf_token = self.get_csrf_token()
 
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 first_response = self.client.post(
@@ -112,6 +130,7 @@ class AppTest(unittest.TestCase):
                         "name": "Usuario local",
                         "password": "senha-segura",
                         "password_confirmation": "senha-segura",
+                        "csrf_token": csrf_token,
                     },
                 )
 
@@ -121,6 +140,7 @@ class AppTest(unittest.TestCase):
     def test_register_requires_matching_password_confirmation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
+            csrf_token = self.get_csrf_token()
 
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 response = self.client.post(
@@ -129,6 +149,7 @@ class AppTest(unittest.TestCase):
                         "name": "Nova conta",
                         "password": "senha-segura",
                         "password_confirmation": "outra",
+                        "csrf_token": csrf_token,
                     },
                 )
 
@@ -138,6 +159,7 @@ class AppTest(unittest.TestCase):
     def test_register_requires_minimum_password_length(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
+            csrf_token = self.get_csrf_token()
 
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 response = self.client.post(
@@ -146,6 +168,7 @@ class AppTest(unittest.TestCase):
                         "name": "Nova conta",
                         "password": "curta",
                         "password_confirmation": "curta",
+                        "csrf_token": csrf_token,
                     },
                 )
 
@@ -153,11 +176,12 @@ class AppTest(unittest.TestCase):
             self.assertIn(b"A senha deve ter pelo menos 8 caracteres.", response.data)
 
     def test_logout_keeps_index_available(self):
+        csrf_token = self.get_csrf_token()
         with self.client.session_transaction() as session:
             session["user_id"] = 1
             session["user_name"] = "Usuario local"
 
-        response = self.client.post("/logout", follow_redirects=True)
+        response = self.client.post("/logout", data={"csrf_token": csrf_token}, follow_redirects=True)
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Gestao Financeira", response.data)
@@ -203,8 +227,10 @@ class AppTest(unittest.TestCase):
             database_path = Path(temp_dir) / "app.db"
 
             with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
                 save_response = self.client.post(
                     "/api/month-budget",
+                    headers=headers,
                     json={
                         "month": 5,
                         "year": 2026,
@@ -247,8 +273,10 @@ class AppTest(unittest.TestCase):
             database_path = Path(temp_dir) / "app.db"
 
             with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
                 self.client.post(
                     "/api/month-budget",
+                    headers=headers,
                     json={
                         "month": 5,
                         "year": 2026,
@@ -263,6 +291,7 @@ class AppTest(unittest.TestCase):
                 )
                 self.client.post(
                     "/api/month-budget",
+                    headers=headers,
                     json={
                         "month": 6,
                         "year": 2026,
@@ -292,8 +321,10 @@ class AppTest(unittest.TestCase):
             database_path = Path(temp_dir) / "app.db"
 
             with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
                 create_response = self.client.post(
                     "/api/categories",
+                    headers=headers,
                     json={"name": "Moradia", "type": "fixed"},
                 )
                 list_response = self.client.get("/api/categories")
@@ -312,9 +343,11 @@ class AppTest(unittest.TestCase):
             database_path = Path(temp_dir) / "app.db"
 
             with patch.object(app_module, "DATABASE_PATH", database_path):
-                self.client.post("/api/categories", json={"name": "Lazer", "type": "variable"})
+                headers = self.csrf_headers()
+                self.client.post("/api/categories", headers=headers, json={"name": "Lazer", "type": "variable"})
                 duplicate_response = self.client.post(
                     "/api/categories",
+                    headers=headers,
                     json={"name": "Lazer", "type": "variable"},
                 )
 
@@ -323,13 +356,73 @@ class AppTest(unittest.TestCase):
             self.assertEqual(duplicate_response.status_code, 409)
             self.assertFalse(data["created"])
 
+    def test_update_and_delete_category(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                create_response = self.client.post(
+                    "/api/categories",
+                    headers=headers,
+                    json={"name": "Casa", "type": "fixed"},
+                )
+                category_id = create_response.get_json()["category"]["id"]
+                update_response = self.client.patch(
+                    f"/api/categories/{category_id}",
+                    headers=headers,
+                    json={"name": "Moradia", "type": "both"},
+                )
+                delete_response = self.client.delete(
+                    f"/api/categories/{category_id}",
+                    headers=headers,
+                )
+                list_response = self.client.get("/api/categories")
+
+            update_data = update_response.get_json()
+            list_data = list_response.get_json()
+
+            self.assertEqual(update_response.status_code, 200)
+            self.assertTrue(update_data["updated"])
+            self.assertEqual(update_data["category"]["name"], "Moradia")
+            self.assertEqual(update_data["category"]["type"], "both")
+            self.assertEqual(delete_response.status_code, 200)
+            self.assertEqual(list_data["categories"], [])
+
+    def test_api_rejects_mutation_without_csrf_token(self):
+        response = self.client.post("/api/categories", json={"name": "Moradia", "type": "fixed"})
+        data = response.get_json()
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Sessao expirada", data["message"])
+
+    def test_month_budget_rejects_invalid_period(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                invalid_month_response = self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={"month": 13, "year": 2026, "salary": "1000,00"},
+                )
+                invalid_year_response = self.client.get("/api/month-budget?month=5&year=1899")
+
+            self.assertEqual(invalid_month_response.status_code, 400)
+            self.assertIn("mes entre 1 e 12", invalid_month_response.get_json()["message"])
+            self.assertEqual(invalid_year_response.status_code, 400)
+            self.assertIn("ano entre 1900 e 9999", invalid_year_response.get_json()["message"])
+
     def test_save_and_load_different_month_budgets(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
 
             with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
                 may_save_response = self.client.post(
                     "/api/month-budget",
+                    headers=headers,
                     json={
                         "month": 5,
                         "year": 2026,
@@ -344,6 +437,7 @@ class AppTest(unittest.TestCase):
                 )
                 june_save_response = self.client.post(
                     "/api/month-budget",
+                    headers=headers,
                     json={
                         "month": 6,
                         "year": 2026,

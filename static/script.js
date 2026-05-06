@@ -30,9 +30,13 @@ const comparisonList = document.querySelector("#comparisonList");
 const categoryForm = document.querySelector("#categoryForm");
 const categoryNameInput = document.querySelector("#categoryNameInput");
 const categoryTypeInput = document.querySelector("#categoryTypeInput");
+const categorySubmitButton = document.querySelector("#categorySubmitButton");
+const categoryCancelButton = document.querySelector("#categoryCancelButton");
 const categoryStatus = document.querySelector("#categoryStatus");
 const categoryList = document.querySelector("#categoryList");
-const categoryOptions = document.querySelector("#categoryOptions");
+const fixedCategoryOptions = document.querySelector("#fixedCategoryOptions");
+const variableCategoryOptions = document.querySelector("#variableCategoryOptions");
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 const summaryFields = {
   salary: document.querySelector("#summarySalary"),
@@ -60,6 +64,7 @@ let isRestoringState = false;
 let periodChangeTimer = null;
 let savedMonthBudgets = [];
 let categories = [];
+let editingCategoryId = null;
 
 const chartColors = ["#147d64", "#d97706", "#3b82f6"];
 const categoryTypeLabels = {
@@ -141,6 +146,18 @@ function showFeedbackPopup(message) {
 function hideFeedbackPopup() {
   feedbackPopup.hidden = true;
   feedbackPopupMessage.textContent = "";
+}
+
+function jsonHeaders(includeCsrf = false) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (includeCsrf && csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
+  return headers;
 }
 
 function periodKey(budget) {
@@ -386,9 +403,26 @@ async function loadSavedMonths() {
   }
 }
 
+function categoryAppliesToExpenseType(category, expenseType) {
+  return category.type === "both" || category.type === expenseType;
+}
+
+function renderCategoryOptions(datalist, expenseType) {
+  datalist.innerHTML = "";
+
+  categories
+    .filter((category) => categoryAppliesToExpenseType(category, expenseType))
+    .forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category.name;
+      datalist.appendChild(option);
+    });
+}
+
 function renderCategories() {
   categoryList.innerHTML = "";
-  categoryOptions.innerHTML = "";
+  renderCategoryOptions(fixedCategoryOptions, "fixed");
+  renderCategoryOptions(variableCategoryOptions, "variable");
 
   if (!categories.length) {
     categoryStatus.textContent = "Categorias aparecem como sugestao nos gastos.";
@@ -398,21 +432,54 @@ function renderCategories() {
   categoryStatus.textContent = `${categories.length} categoria(s) cadastrada(s).`;
 
   categories.forEach((category) => {
-    const option = document.createElement("option");
-    option.value = category.name;
-    categoryOptions.appendChild(option);
-
     const item = document.createElement("li");
     const chip = document.createElement("span");
     const type = document.createElement("span");
+    const actions = document.createElement("span");
+    const editButton = document.createElement("button");
+    const deleteButton = document.createElement("button");
+
+    item.className = "category-item";
 
     chip.className = "category-chip";
     chip.textContent = category.name;
     type.textContent = categoryTypeLabels[category.type] || category.type;
     chip.appendChild(type);
-    item.appendChild(chip);
+
+    actions.className = "category-actions";
+
+    editButton.type = "button";
+    editButton.className = "category-action-button";
+    editButton.textContent = "Editar";
+    editButton.addEventListener("click", () => startEditingCategory(category));
+
+    deleteButton.type = "button";
+    deleteButton.className = "category-action-button is-danger";
+    deleteButton.textContent = "Remover";
+    deleteButton.addEventListener("click", () => deleteCategory(category));
+
+    actions.append(editButton, deleteButton);
+    item.append(chip, actions);
     categoryList.appendChild(item);
   });
+}
+
+function resetCategoryForm() {
+  editingCategoryId = null;
+  categoryNameInput.value = "";
+  categoryTypeInput.value = "both";
+  categorySubmitButton.textContent = "Adicionar";
+  categoryCancelButton.hidden = true;
+}
+
+function startEditingCategory(category) {
+  editingCategoryId = category.id;
+  categoryNameInput.value = category.name;
+  categoryTypeInput.value = category.type;
+  categorySubmitButton.textContent = "Salvar";
+  categoryCancelButton.hidden = false;
+  categoryNameInput.focus();
+  categoryStatus.textContent = `Editando ${category.name}.`;
 }
 
 async function loadCategories() {
@@ -432,7 +499,7 @@ async function loadCategories() {
   }
 }
 
-async function addCategory(event) {
+async function saveCategory(event) {
   event.preventDefault();
 
   const name = categoryNameInput.value.trim();
@@ -444,31 +511,60 @@ async function addCategory(event) {
   }
 
   try {
-    const response = await fetch("/api/categories", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const url = editingCategoryId ? `/api/categories/${editingCategoryId}` : "/api/categories";
+    const response = await fetch(url, {
+      method: editingCategoryId ? "PATCH" : "POST",
+      headers: jsonHeaders(true),
       body: JSON.stringify({ name, type }),
     });
     const data = await response.json();
 
     if (!response.ok) {
-      categoryStatus.textContent = data.message || "Nao foi possivel adicionar a categoria.";
+      categoryStatus.textContent = data.message || "Nao foi possivel salvar a categoria.";
       showFeedbackPopup(categoryStatus.textContent);
       return;
     }
 
-    categoryNameInput.value = "";
-    categoryStatus.textContent = `Categoria ${data.category.name} adicionada.`;
+    categoryStatus.textContent = editingCategoryId
+      ? `Categoria ${data.category.name} atualizada.`
+      : `Categoria ${data.category.name} adicionada.`;
+    resetCategoryForm();
     await loadCategories();
   } catch {
-    categoryStatus.textContent = "Nao foi possivel adicionar a categoria.";
+    categoryStatus.textContent = "Nao foi possivel salvar a categoria.";
     showFeedbackPopup(categoryStatus.textContent);
   }
 }
 
-function createExpenseRow(expense = {}) {
+async function deleteCategory(category) {
+  const shouldDelete = window.confirm(`Remover a categoria ${category.name}?`);
+
+  if (!shouldDelete) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/categories/${category.id}`, {
+      method: "DELETE",
+      headers: jsonHeaders(true),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      categoryStatus.textContent = data.message || "Nao foi possivel remover a categoria.";
+      showFeedbackPopup(categoryStatus.textContent);
+      return;
+    }
+
+    categoryStatus.textContent = data.deleted ? "Categoria removida." : "Categoria nao encontrada.";
+    await loadCategories();
+  } catch {
+    categoryStatus.textContent = "Nao foi possivel remover a categoria.";
+    showFeedbackPopup(categoryStatus.textContent);
+  }
+}
+
+function createExpenseRow(expense = {}, expenseType = "fixed") {
   const row = rowTemplate.content.firstElementChild.cloneNode(true);
   const descriptionInput = row.querySelector(".description-input");
   const categoryInput = row.querySelector(".category-input");
@@ -484,6 +580,7 @@ function createExpenseRow(expense = {}) {
   descriptionInput.value = expense.description || "";
   categoryInput.value = expense.category || "";
   amountInput.value = formatAmountForInput(expense.amount);
+  categoryInput.setAttribute("list", expenseType === "variable" ? "variableCategoryOptions" : "fixedCategoryOptions");
 
   descriptionInput.id = `expenseDescription${rowId}`;
   categoryInput.id = `expenseCategory${rowId}`;
@@ -507,7 +604,8 @@ function createExpenseRow(expense = {}) {
 }
 
 function addExpenseRow(tbody, expense = {}) {
-  tbody.appendChild(createExpenseRow(expense));
+  const expenseType = tbody === variableBody ? "variable" : "fixed";
+  tbody.appendChild(createExpenseRow(expense, expenseType));
 }
 
 function ensureOneRow(tbody) {
@@ -676,9 +774,7 @@ async function saveBudgetToDatabase() {
   try {
     const response = await fetch("/api/month-budget", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: jsonHeaders(true),
       body: JSON.stringify(getPayload()),
     });
 
@@ -868,9 +964,7 @@ async function refreshSummary() {
 
   const response = await fetch("/api/summary", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: jsonHeaders(),
     body: JSON.stringify(getPayload()),
   });
 
@@ -1005,7 +1099,11 @@ feedbackPopupClose.addEventListener("click", hideFeedbackPopup);
 refreshSavedMonthsButton.addEventListener("click", loadSavedMonths);
 compareBaseMonth.addEventListener("change", renderComparison);
 compareTargetMonth.addEventListener("change", renderComparison);
-categoryForm.addEventListener("submit", addCategory);
+categoryForm.addEventListener("submit", saveCategory);
+categoryCancelButton.addEventListener("click", () => {
+  resetCategoryForm();
+  categoryStatus.textContent = `${categories.length} categoria(s) cadastrada(s).`;
+});
 periodMonthInput.addEventListener("change", () => {
   hideFeedbackPopup();
   updatePeriodLabel();

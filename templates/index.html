@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="app-version" content="{{ app_version }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Gestao Financeira</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=app_version) }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='script.js', v=app_version) }}" defer></script>
   </head>
   <body>
     <div class="feedback-popup is-negative" id="feedbackPopup" role="alert" aria-live="assertive" hidden>
@@ -24,6 +25,7 @@
         {% if current_user_name %}
           <span class="user-chip">{{ current_user_name }}</span>
           <form method="post" action="{{ url_for('auth.logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="secondary-button" type="submit">Sair</button>
           </form>
         {% else %}
@@ -110,7 +112,8 @@
                 <option value="fixed">Fixo</option>
                 <option value="variable">Variado</option>
               </select>
-              <button class="secondary-button compact-button" type="submit">Adicionar</button>
+              <button class="secondary-button compact-button" id="categorySubmitButton" type="submit">Adicionar</button>
+              <button class="secondary-button compact-button" id="categoryCancelButton" type="button" hidden>Cancelar</button>
             </form>
 
             <p class="field-hint" id="categoryStatus">Categorias aparecem como sugestao nos gastos.</p>
@@ -283,7 +286,8 @@
       </section>
     </main>
 
-    <datalist id="categoryOptions"></datalist>
+    <datalist id="fixedCategoryOptions"></datalist>
+    <datalist id="variableCategoryOptions"></datalist>
 
     <template id="expenseRowTemplate">
       <tr>
@@ -293,7 +297,7 @@
         </td>
         <td>
           <label class="sr-only category-label">Categoria opcional</label>
-          <input class="category-input" type="text" maxlength="40" placeholder="Opcional" list="categoryOptions">
+          <input class="category-input" type="text" maxlength="40" placeholder="Opcional">
         </td>
         <td>
           <label class="sr-only amount-label">Valor do gasto</label>

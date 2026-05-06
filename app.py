@@ -17,23 +17,39 @@ from config import (
 )
 from finance_logic import calculate_summary
 from repositories import PostgreSQLBudgetRepository, SQLiteBudgetRepository
+from security import get_csrf_token, get_request_csrf_token, is_valid_csrf_token
 
 
 validate_runtime_config()
 app = Flask(__name__)
 app.config["SECRET_KEY"] = SECRET_KEY
-APP_VERSION = "1.0"
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = IS_PRODUCTION
+APP_VERSION = "1.1"
 app.register_blueprint(auth_bp)
 
 
-def get_current_period(payload=None):
+def parse_current_period(payload=None):
     payload = payload or {}
     now = datetime.now()
 
-    month = int(payload.get("month") or request.args.get("month") or now.month)
-    year = int(payload.get("year") or request.args.get("year") or now.year)
+    raw_month = payload.get("month") or request.args.get("month") or now.month
+    raw_year = payload.get("year") or request.args.get("year") or now.year
 
-    return month, year
+    try:
+        month = int(raw_month)
+        year = int(raw_year)
+    except (TypeError, ValueError):
+        return None, None, "Mes e ano devem ser numeros validos."
+
+    if month < 1 or month > 12:
+        return None, None, "Informe um mes entre 1 e 12."
+
+    if year < 1900 or year > 9999:
+        return None, None, "Informe um ano entre 1900 e 9999."
+
+    return month, year, None
 
 
 def get_repository():
@@ -66,6 +82,32 @@ def get_active_user(repository):
 
 def no_active_user_response():
     return jsonify({"message": "Crie uma conta ou faca login para usar esta acao."}), 401
+
+
+def invalid_csrf_response():
+    return jsonify({"message": "Sessao expirada. Recarregue a pagina e tente novamente."}), 400
+
+
+@app.context_processor
+def inject_csrf_token():
+    return {"app_version": APP_VERSION, "csrf_token": get_csrf_token}
+
+
+@app.before_request
+def protect_state_changing_requests():
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+
+    if request.endpoint == "summary":
+        return None
+
+    if is_valid_csrf_token(get_request_csrf_token()):
+        return None
+
+    if request.path.startswith("/api/"):
+        return invalid_csrf_response()
+
+    return render_template("error.html", title="Sessao expirada", message="Recarregue a pagina e tente novamente."), 400
 
 
 def expense_to_dict(expense):
@@ -206,6 +248,72 @@ def create_category():
         repository.close()
 
 
+@app.patch("/api/categories/<int:category_id>")
+def update_category(category_id):
+    payload = request.get_json(silent=True) or {}
+    name = str(payload.get("name", "")).strip()
+    category_type = str(payload.get("type", "both")).strip() or "both"
+
+    if category_type not in {"fixed", "variable", "both"}:
+        return jsonify({"updated": False, "message": "Tipo de categoria invalido."}), 400
+
+    if not name:
+        return jsonify({"updated": False, "message": "Informe o nome da categoria."}), 400
+
+    repository = get_repository()
+
+    try:
+        user = get_active_user(repository)
+        if not user:
+            return no_active_user_response()
+
+        category = repository.get_category(category_id)
+
+        if not category or category.user_id != user.id:
+            return jsonify({"updated": False, "message": "Categoria nao encontrada."}), 404
+
+        existing_category = repository.get_category_by_name_and_type(user.id, name, category_type)
+
+        if existing_category and existing_category.id != category_id:
+            return (
+                jsonify(
+                    {
+                        "updated": False,
+                        "message": "Esta categoria ja existe.",
+                        "category": category_to_dict(existing_category),
+                    }
+                ),
+                409,
+            )
+
+        updated_category = repository.update_category(category_id, name, category_type)
+
+        return jsonify({"updated": True, "category": category_to_dict(updated_category)})
+    finally:
+        repository.close()
+
+
+@app.delete("/api/categories/<int:category_id>")
+def delete_category(category_id):
+    repository = get_repository()
+
+    try:
+        user = get_active_user(repository)
+        if not user:
+            return no_active_user_response()
+
+        category = repository.get_category(category_id)
+
+        if not category or category.user_id != user.id:
+            return jsonify({"deleted": False, "message": "Categoria nao encontrada."}), 404
+
+        deleted = repository.delete_category(category_id)
+
+        return jsonify({"deleted": deleted})
+    finally:
+        repository.close()
+
+
 @app.get("/api/month-budgets")
 def list_month_budgets():
     repository = get_repository()
@@ -230,7 +338,11 @@ def list_month_budgets():
 
 @app.get("/api/month-budget")
 def load_month_budget():
-    month, year = get_current_period()
+    month, year, period_error = parse_current_period()
+
+    if period_error:
+        return jsonify({"found": False, "message": period_error}), 400
+
     repository = get_repository()
 
     try:
@@ -263,7 +375,11 @@ def load_month_budget():
 @app.post("/api/month-budget")
 def save_month_budget():
     payload = request.get_json(silent=True) or {}
-    month, year = get_current_period(payload)
+    month, year, period_error = parse_current_period(payload)
+
+    if period_error:
+        return jsonify({"saved": False, "message": period_error}), 400
+
     salary = payload.get("salary", 0)
     fixed_expenses = payload.get("fixed_expenses", [])
     variable_expenses = payload.get("variable_expenses", [])

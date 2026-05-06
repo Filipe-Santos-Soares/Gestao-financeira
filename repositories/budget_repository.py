@@ -356,6 +356,31 @@ class SQLiteBudgetRepository:
 
         return self.get_category(category_id)
 
+    def update_category(self, category_id, name, category_type="both"):
+        self.execute(
+            """
+            UPDATE categories
+            SET name = ?, type = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (name.strip(), category_type, category_id),
+        )
+        self.connection.commit()
+
+        return self.get_category(category_id)
+
+    def delete_category(self, category_id):
+        cursor = self.execute(
+            """
+            DELETE FROM categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        )
+        self.connection.commit()
+
+        return cursor.rowcount > 0
+
     def get_category(self, category_id):
         row = self.fetchone(
             """

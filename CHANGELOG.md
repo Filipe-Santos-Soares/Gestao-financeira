@@ -29,6 +29,11 @@
 - Adicionado `Procfile` e dependencia `gunicorn` para execucao em ambiente hospedado.
 - Mantido `localStorage` como fallback local da interface.
 - Adicionados testes automatizados para a camada de repositorio.
+- Atualizada a versao da aplicacao para 1.1.
+- Adicionada edicao e remocao de categorias.
+- Ajustadas sugestoes de categorias por tipo de gasto.
+- Adicionada validacao de mes e ano nas APIs de orcamento mensal.
+- Adicionada protecao CSRF em acoes mutaveis e configuracao mais restrita para cookies de sessao.
 
 ## 1.0 - Versao inicial
 
