@@ -48,6 +48,9 @@ class AppTest(unittest.TestCase):
         self.assertIn(b"Entre meses", response.data)
         self.assertIn(b"Historico mensal", response.data)
         self.assertIn(b"Gerenciar", response.data)
+        self.assertIn(b'id="fixedCategoryOptions"', response.data)
+        self.assertIn(b'id="variableCategoryOptions"', response.data)
+        self.assertIn(b'autocomplete="off"', response.data)
 
     def test_login_form_loads(self):
         response = self.client.get("/login")
@@ -368,13 +371,13 @@ class AppTest(unittest.TestCase):
                     json={"name": "Casa", "type": "fixed"},
                 )
                 category_id = create_response.get_json()["category"]["id"]
-                update_response = self.client.patch(
-                    f"/api/categories/{category_id}",
+                update_response = self.client.post(
+                    f"/api/categories/{category_id}/update",
                     headers=headers,
                     json={"name": "Moradia", "type": "both"},
                 )
-                delete_response = self.client.delete(
-                    f"/api/categories/{category_id}",
+                delete_response = self.client.post(
+                    f"/api/categories/{category_id}/delete",
                     headers=headers,
                 )
                 list_response = self.client.get("/api/categories")
@@ -388,6 +391,32 @@ class AppTest(unittest.TestCase):
             self.assertEqual(update_data["category"]["type"], "both")
             self.assertEqual(delete_response.status_code, 200)
             self.assertEqual(list_data["categories"], [])
+
+    def test_category_patch_and_delete_methods_still_work(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                create_response = self.client.post(
+                    "/api/categories",
+                    headers=headers,
+                    json={"name": "Casa", "type": "fixed"},
+                )
+                category_id = create_response.get_json()["category"]["id"]
+                update_response = self.client.patch(
+                    f"/api/categories/{category_id}",
+                    headers=headers,
+                    json={"name": "Moradia", "type": "variable"},
+                )
+                delete_response = self.client.delete(
+                    f"/api/categories/{category_id}",
+                    headers=headers,
+                )
+
+            self.assertEqual(update_response.status_code, 200)
+            self.assertEqual(update_response.get_json()["category"]["type"], "variable")
+            self.assertEqual(delete_response.status_code, 200)
 
     def test_api_rejects_mutation_without_csrf_token(self):
         response = self.client.post("/api/categories", json={"name": "Moradia", "type": "fixed"})

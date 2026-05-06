@@ -249,6 +249,7 @@ def create_category():
 
 
 @app.patch("/api/categories/<int:category_id>")
+@app.post("/api/categories/<int:category_id>/update")
 def update_category(category_id):
     payload = request.get_json(silent=True) or {}
     name = str(payload.get("name", "")).strip()
@@ -294,6 +295,7 @@ def update_category(category_id):
 
 
 @app.delete("/api/categories/<int:category_id>")
+@app.post("/api/categories/<int:category_id>/delete")
 def delete_category(category_id):
     repository = get_repository()
 

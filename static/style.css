@@ -493,11 +493,32 @@ td input {
 .category-list {
   display: grid;
   gap: 8px;
-  max-height: 88px;
+  max-height: 150px;
   margin: 0;
-  padding: 2px;
+  padding: 2px 8px 22px 2px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding-bottom: 22px;
   list-style: none;
+}
+
+.category-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.category-list::-webkit-scrollbar-track {
+  background: var(--surface-alt);
+  border-radius: 8px;
+}
+
+.category-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+.category-list::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 .category-item {

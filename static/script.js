@@ -511,9 +511,9 @@ async function saveCategory(event) {
   }
 
   try {
-    const url = editingCategoryId ? `/api/categories/${editingCategoryId}` : "/api/categories";
+    const url = editingCategoryId ? `/api/categories/${editingCategoryId}/update` : "/api/categories";
     const response = await fetch(url, {
-      method: editingCategoryId ? "PATCH" : "POST",
+      method: "POST",
       headers: jsonHeaders(true),
       body: JSON.stringify({ name, type }),
     });
@@ -544,8 +544,8 @@ async function deleteCategory(category) {
   }
 
   try {
-    const response = await fetch(`/api/categories/${category.id}`, {
-      method: "DELETE",
+    const response = await fetch(`/api/categories/${category.id}/delete`, {
+      method: "POST",
       headers: jsonHeaders(true),
     });
     const data = await response.json();
