@@ -41,10 +41,10 @@ def parse_current_period(payload=None):
         month = int(raw_month)
         year = int(raw_year)
     except (TypeError, ValueError):
-        return None, None, "Mes e ano devem ser numeros validos."
+        return None, None, "Mês e ano devem ser números válidos."
 
     if month < 1 or month > 12:
-        return None, None, "Informe um mes entre 1 e 12."
+        return None, None, "Informe um mês entre 1 e 12."
 
     if year < 1900 or year > 9999:
         return None, None, "Informe um ano entre 1900 e 9999."
@@ -81,11 +81,11 @@ def get_active_user(repository):
 
 
 def no_active_user_response():
-    return jsonify({"message": "Crie uma conta ou faca login para usar esta acao."}), 401
+    return jsonify({"message": "Crie uma conta ou faça login para usar esta ação."}), 401
 
 
 def invalid_csrf_response():
-    return jsonify({"message": "Sessao expirada. Recarregue a pagina e tente novamente."}), 400
+    return jsonify({"message": "Sessão expirada. Recarregue a página e tente novamente."}), 400
 
 
 @app.context_processor
@@ -107,7 +107,7 @@ def protect_state_changing_requests():
     if request.path.startswith("/api/"):
         return invalid_csrf_response()
 
-    return render_template("error.html", title="Sessao expirada", message="Recarregue a pagina e tente novamente."), 400
+    return render_template("error.html", title="Sessão expirada", message="Recarregue a página e tente novamente."), 400
 
 
 def expense_to_dict(expense):
@@ -171,12 +171,12 @@ def index():
 
 @app.errorhandler(404)
 def not_found(error):
-    return render_template("error.html", title="Pagina nao encontrada", message="A pagina solicitada nao existe."), 404
+    return render_template("error.html", title="Página não encontrada", message="A página solicitada não existe."), 404
 
 
 @app.errorhandler(500)
 def server_error(error):
-    return render_template("error.html", title="Erro interno", message="Nao foi possivel concluir a acao agora."), 500
+    return render_template("error.html", title="Erro interno", message="Não foi possível concluir a ação agora."), 500
 
 
 @app.post("/api/summary")
@@ -215,7 +215,7 @@ def create_category():
     category_type = str(payload.get("type", "both")).strip() or "both"
 
     if category_type not in {"fixed", "variable", "both"}:
-        return jsonify({"created": False, "message": "Tipo de categoria invalido."}), 400
+        return jsonify({"created": False, "message": "Tipo de categoria inválido."}), 400
 
     if not name:
         return jsonify({"created": False, "message": "Informe o nome da categoria."}), 400
@@ -234,7 +234,7 @@ def create_category():
                 jsonify(
                     {
                         "created": False,
-                        "message": "Esta categoria ja existe.",
+                        "message": "Esta categoria já existe.",
                         "category": category_to_dict(existing_category),
                     }
                 ),
@@ -256,7 +256,7 @@ def update_category(category_id):
     category_type = str(payload.get("type", "both")).strip() or "both"
 
     if category_type not in {"fixed", "variable", "both"}:
-        return jsonify({"updated": False, "message": "Tipo de categoria invalido."}), 400
+        return jsonify({"updated": False, "message": "Tipo de categoria inválido."}), 400
 
     if not name:
         return jsonify({"updated": False, "message": "Informe o nome da categoria."}), 400
@@ -271,7 +271,7 @@ def update_category(category_id):
         category = repository.get_category(category_id)
 
         if not category or category.user_id != user.id:
-            return jsonify({"updated": False, "message": "Categoria nao encontrada."}), 404
+            return jsonify({"updated": False, "message": "Categoria não encontrada."}), 404
 
         existing_category = repository.get_category_by_name_and_type(user.id, name, category_type)
 
@@ -280,7 +280,7 @@ def update_category(category_id):
                 jsonify(
                     {
                         "updated": False,
-                        "message": "Esta categoria ja existe.",
+                        "message": "Esta categoria já existe.",
                         "category": category_to_dict(existing_category),
                     }
                 ),
@@ -307,7 +307,7 @@ def delete_category(category_id):
         category = repository.get_category(category_id)
 
         if not category or category.user_id != user.id:
-            return jsonify({"deleted": False, "message": "Categoria nao encontrada."}), 404
+            return jsonify({"deleted": False, "message": "Categoria não encontrada."}), 404
 
         deleted = repository.delete_category(category_id)
 
@@ -360,7 +360,7 @@ def load_month_budget():
                     "found": False,
                     "month": month,
                     "year": year,
-                    "message": "Nenhum orcamento salvo para este mes.",
+                    "message": "Nenhum orçamento salvo para este mês.",
                 }
             )
 

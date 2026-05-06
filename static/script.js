@@ -319,7 +319,7 @@ function renderSavedMonths(monthBudgets) {
 
   if (!monthBudgets.length) {
     savedMonthsEmpty.hidden = false;
-    savedMonthsEmpty.textContent = "Nenhum mes salvo no banco ainda.";
+    savedMonthsEmpty.textContent = "Nenhum mês salvo no banco ainda.";
     return;
   }
 
@@ -339,7 +339,7 @@ function renderSavedMonths(monthBudgets) {
     button.dataset.month = budget.month;
     button.dataset.year = budget.year;
     button.classList.toggle("is-negative", budget.is_over_budget);
-    button.setAttribute("aria-label", `Carregar orcamento de ${formatPeriod(budget.month, budget.year)}`);
+    button.setAttribute("aria-label", `Carregar orçamento de ${formatPeriod(budget.month, budget.year)}`);
 
     periodRow.className = "saved-month-period";
     period.textContent = formatPeriod(budget.month, budget.year);
@@ -369,7 +369,7 @@ function renderSavedMonths(monthBudgets) {
 }
 
 function showSavedMonthsError() {
-  const message = "Nao foi possivel carregar os meses salvos. Clique em Atualizar para tentar novamente.";
+  const message = "Não foi possível carregar os meses salvos. Clique em Atualizar para tentar novamente.";
 
   savedMonthsList.innerHTML = "";
   savedMonthsEmpty.hidden = false;
@@ -425,7 +425,7 @@ function renderCategories() {
   renderCategoryOptions(variableCategoryOptions, "variable");
 
   if (!categories.length) {
-    categoryStatus.textContent = "Categorias aparecem como sugestao nos gastos.";
+    categoryStatus.textContent = "Categorias aparecem como sugestão nos gastos.";
     return;
   }
 
@@ -487,7 +487,7 @@ async function loadCategories() {
     const response = await fetch("/api/categories");
 
     if (!response.ok) {
-      categoryStatus.textContent = "Nao foi possivel carregar as categorias.";
+      categoryStatus.textContent = "Não foi possível carregar as categorias.";
       return;
     }
 
@@ -495,7 +495,7 @@ async function loadCategories() {
     categories = data.categories || [];
     renderCategories();
   } catch {
-    categoryStatus.textContent = "Nao foi possivel carregar as categorias.";
+    categoryStatus.textContent = "Não foi possível carregar as categorias.";
   }
 }
 
@@ -520,7 +520,7 @@ async function saveCategory(event) {
     const data = await response.json();
 
     if (!response.ok) {
-      categoryStatus.textContent = data.message || "Nao foi possivel salvar a categoria.";
+      categoryStatus.textContent = data.message || "Não foi possível salvar a categoria.";
       showFeedbackPopup(categoryStatus.textContent);
       return;
     }
@@ -531,7 +531,7 @@ async function saveCategory(event) {
     resetCategoryForm();
     await loadCategories();
   } catch {
-    categoryStatus.textContent = "Nao foi possivel salvar a categoria.";
+    categoryStatus.textContent = "Não foi possível salvar a categoria.";
     showFeedbackPopup(categoryStatus.textContent);
   }
 }
@@ -551,15 +551,15 @@ async function deleteCategory(category) {
     const data = await response.json();
 
     if (!response.ok) {
-      categoryStatus.textContent = data.message || "Nao foi possivel remover a categoria.";
+      categoryStatus.textContent = data.message || "Não foi possível remover a categoria.";
       showFeedbackPopup(categoryStatus.textContent);
       return;
     }
 
-    categoryStatus.textContent = data.deleted ? "Categoria removida." : "Categoria nao encontrada.";
+    categoryStatus.textContent = data.deleted ? "Categoria removida." : "Categoria não encontrada.";
     await loadCategories();
   } catch {
-    categoryStatus.textContent = "Nao foi possivel remover a categoria.";
+    categoryStatus.textContent = "Não foi possível remover a categoria.";
     showFeedbackPopup(categoryStatus.textContent);
   }
 }
@@ -779,7 +779,7 @@ async function saveBudgetToDatabase() {
     });
 
     if (!response.ok) {
-      statusMessage.textContent = "Nao foi possivel salvar no banco de dados.";
+      statusMessage.textContent = "Não foi possível salvar no banco de dados.";
       statusMessage.classList.add("is-negative");
       return;
     }
@@ -790,7 +790,7 @@ async function saveBudgetToDatabase() {
     hideFeedbackPopup();
     await loadSavedMonths();
   } catch {
-    statusMessage.textContent = "Nao foi possivel salvar no banco de dados.";
+    statusMessage.textContent = "Não foi possível salvar no banco de dados.";
     statusMessage.classList.add("is-negative");
   } finally {
     saveBudgetButton.disabled = false;
@@ -812,9 +812,9 @@ async function loadBudgetFromDatabase(options = {}) {
     const response = await fetch(`/api/month-budget?${params.toString()}`);
 
     if (!response.ok) {
-      statusMessage.textContent = "Nao foi possivel carregar os dados do banco.";
+      statusMessage.textContent = "Não foi possível carregar os dados do banco.";
       statusMessage.classList.add("is-negative");
-      showFeedbackPopup("Nao foi possivel carregar os dados do banco.");
+      showFeedbackPopup("Não foi possível carregar os dados do banco.");
       return;
     }
 
@@ -826,13 +826,13 @@ async function loadBudgetFromDatabase(options = {}) {
         saveState();
         await refreshSummary();
         statusMessage.classList.remove("is-negative");
-        statusMessage.textContent = `Nenhum dado salvo para ${formatPeriod(data.month, data.year)}. Tela pronta para um novo orcamento.`;
+        statusMessage.textContent = `Nenhum dado salvo para ${formatPeriod(data.month, data.year)}. Tela pronta para um novo orçamento.`;
         hideFeedbackPopup();
         updateSavedMonthsActive();
         return;
       }
 
-      const notFoundMessage = `Nenhum dado salvo para ${formatPeriod(data.month, data.year)}. Escolha outro mes/ano ou salve este periodo primeiro.`;
+      const notFoundMessage = `Nenhum dado salvo para ${formatPeriod(data.month, data.year)}. Escolha outro mês/ano ou salve este período primeiro.`;
       statusMessage.classList.add("is-negative");
       statusMessage.textContent = notFoundMessage;
       showFeedbackPopup(notFoundMessage);
@@ -852,9 +852,9 @@ async function loadBudgetFromDatabase(options = {}) {
     hideFeedbackPopup();
     updateSavedMonthsActive();
   } catch {
-    statusMessage.textContent = "Nao foi possivel carregar os dados do banco.";
+    statusMessage.textContent = "Não foi possível carregar os dados do banco.";
     statusMessage.classList.add("is-negative");
-    showFeedbackPopup("Nao foi possivel carregar os dados do banco.");
+    showFeedbackPopup("Não foi possível carregar os dados do banco.");
   } finally {
   }
 }
@@ -885,16 +885,16 @@ async function duplicatePreviousMonth() {
     const response = await fetch(`/api/month-budget?${params.toString()}`);
 
     if (!response.ok) {
-      statusMessage.textContent = "Nao foi possivel duplicar o mes anterior.";
+      statusMessage.textContent = "Não foi possível duplicar o mês anterior.";
       statusMessage.classList.add("is-negative");
-      showFeedbackPopup("Nao foi possivel duplicar o mes anterior.");
+      showFeedbackPopup("Não foi possível duplicar o mês anterior.");
       return;
     }
 
     const data = await response.json();
 
     if (!data.found) {
-      const notFoundMessage = `Nenhum dado salvo para ${formatPeriod(sourcePeriod.month, sourcePeriod.year)}. Salve o mes anterior antes de duplicar.`;
+      const notFoundMessage = `Nenhum dado salvo para ${formatPeriod(sourcePeriod.month, sourcePeriod.year)}. Salve o mês anterior antes de duplicar.`;
       statusMessage.classList.add("is-negative");
       statusMessage.textContent = notFoundMessage;
       showFeedbackPopup(notFoundMessage);
@@ -914,9 +914,9 @@ async function duplicatePreviousMonth() {
     statusMessage.classList.remove("is-negative");
     statusMessage.textContent = `Dados copiados de ${formatPeriod(sourcePeriod.month, sourcePeriod.year)} para ${formatPeriod(targetPeriod.month, targetPeriod.year)}. Revise e clique em Salvar.`;
   } catch {
-    statusMessage.textContent = "Nao foi possivel duplicar o mes anterior.";
+    statusMessage.textContent = "Não foi possível duplicar o mês anterior.";
     statusMessage.classList.add("is-negative");
-    showFeedbackPopup("Nao foi possivel duplicar o mes anterior.");
+    showFeedbackPopup("Não foi possível duplicar o mês anterior.");
   } finally {
     duplicatePreviousButton.disabled = false;
     duplicatePreviousButton.textContent = originalButtonText;
@@ -969,7 +969,7 @@ async function refreshSummary() {
   });
 
   if (!response.ok) {
-    statusMessage.textContent = "Nao foi possivel recalcular os valores.";
+    statusMessage.textContent = "Não foi possível recalcular os valores.";
     statusMessage.classList.add("is-negative");
     return;
   }
@@ -994,19 +994,19 @@ function renderSummary(summary) {
   statusMessage.classList.toggle("is-negative", summary.is_over_budget);
 
   if (hasIncompleteRow) {
-    salaryHint.textContent = "O salario informado esta sendo usado como base dos calculos.";
-    statusMessage.textContent = "Ha linhas com descricao ou categoria sem valor informado.";
+    salaryHint.textContent = "O salário informado está sendo usado como base dos cálculos.";
+    statusMessage.textContent = "Há linhas com descrição ou categoria sem valor informado.";
   } else if (!summary.has_salary) {
-    salaryHint.textContent = "Informe o salario para calcular os percentuais.";
-    statusMessage.textContent = "Preencha o salario mensal para iniciar o acompanhamento.";
+    salaryHint.textContent = "Informe o salário para calcular os percentuais.";
+    statusMessage.textContent = "Preencha o salário mensal para iniciar o acompanhamento.";
   } else if (summary.is_over_budget) {
-    salaryHint.textContent = "O salario informado esta sendo usado como base dos calculos.";
-    statusMessage.textContent = "Atencao: os gastos ultrapassaram o salario mensal.";
+    salaryHint.textContent = "O salário informado está sendo usado como base dos cálculos.";
+    statusMessage.textContent = "Atenção: os gastos ultrapassaram o salário mensal.";
   } else if (summary.total_expenses === 0) {
-    salaryHint.textContent = "O salario informado esta sendo usado como base dos calculos.";
-    statusMessage.textContent = "Adicione gastos fixos ou variados para montar a distribuicao.";
+    salaryHint.textContent = "O salário informado está sendo usado como base dos cálculos.";
+    statusMessage.textContent = "Adicione gastos fixos ou variados para montar a distribuição.";
   } else {
-    salaryHint.textContent = "O salario informado esta sendo usado como base dos calculos.";
+    salaryHint.textContent = "O salário informado está sendo usado como base dos cálculos.";
     statusMessage.textContent = "Resumo atualizado com os dados informados e salvo neste navegador.";
   }
 }

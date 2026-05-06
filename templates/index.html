@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="app-version" content="{{ app_version }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Gestao Financeira</title>
+    <title>Gestão Financeira</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=app_version) }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="{{ url_for('static', filename='script.js', v=app_version) }}" defer></script>
@@ -19,7 +19,7 @@
     <header class="app-header">
       <div>
         <p class="eyebrow">Painel mensal</p>
-        <h1>Gestao Financeira</h1>
+        <h1>Gestão Financeira</h1>
       </div>
       <div class="header-actions">
         {% if current_user_name %}
@@ -31,12 +31,12 @@
         {% else %}
           <a class="secondary-link" href="{{ url_for('auth.login_form') }}">Login</a>
         {% endif %}
-        <div class="period-controls" aria-label="Periodo do orcamento">
-          <label for="periodMonth">Mes</label>
+        <div class="period-controls" aria-label="Período do orçamento">
+          <label for="periodMonth">Mês</label>
           <select id="periodMonth" name="month">
             <option value="1">Janeiro</option>
             <option value="2">Fevereiro</option>
-            <option value="3">Marco</option>
+            <option value="3">Março</option>
             <option value="4">Abril</option>
             <option value="5">Maio</option>
             <option value="6">Junho</option>
@@ -57,18 +57,18 @@
       </div>
     </header>
 
-    <main class="dashboard" aria-label="Painel de gestao financeira mensal">
+    <main class="dashboard" aria-label="Painel de gestão financeira mensal">
       <section class="top-grid" aria-label="Entrada de dados financeiros">
         <section class="panel salary-panel" aria-labelledby="salaryTitle">
           <header class="panel-header">
             <div>
               <p class="eyebrow">Entrada</p>
-              <h2 id="salaryTitle">Salario mensal</h2>
+              <h2 id="salaryTitle">Salário mensal</h2>
             </div>
           </header>
 
           <form class="salary-form" id="salaryForm">
-            <label for="salaryInput">Valor do salario</label>
+            <label for="salaryInput">Valor do salário</label>
             <div class="money-field">
               <span aria-hidden="true">R$</span>
               <input
@@ -80,19 +80,19 @@
                 placeholder="0,00"
               >
             </div>
-            <p class="field-hint" id="salaryHint">Informe o salario para calcular os percentuais.</p>
+            <p class="field-hint" id="salaryHint">Informe o salário para calcular os percentuais.</p>
           </form>
 
           <section class="saved-months" aria-labelledby="savedMonthsTitle">
             <header class="saved-months-header">
               <div>
-                <p class="eyebrow">Historico</p>
+                <p class="eyebrow">Histórico</p>
                 <h3 id="savedMonthsTitle">Meses salvos</h3>
               </div>
               <button class="secondary-button compact-button" id="refreshSavedMonthsButton" type="button">Atualizar</button>
             </header>
-            <p class="field-hint saved-months-empty" id="savedMonthsEmpty">Nenhum mes salvo no banco ainda.</p>
-            <ul class="saved-months-list" id="savedMonthsList" aria-label="Meses com orcamento salvo"></ul>
+            <p class="field-hint saved-months-empty" id="savedMonthsEmpty">Nenhum mês salvo no banco ainda.</p>
+            <ul class="saved-months-list" id="savedMonthsList" aria-label="Meses com orçamento salvo"></ul>
           </section>
 
           <section class="category-manager" aria-labelledby="categoryManagerTitle">
@@ -116,7 +116,7 @@
               <button class="secondary-button compact-button" id="categoryCancelButton" type="button" hidden>Cancelar</button>
             </form>
 
-            <p class="field-hint" id="categoryStatus">Categorias aparecem como sugestao nos gastos.</p>
+            <p class="field-hint" id="categoryStatus">Categorias aparecem como sugestão nos gastos.</p>
             <ul class="category-list" id="categoryList" aria-label="Categorias cadastradas"></ul>
           </section>
         </section>
@@ -133,7 +133,7 @@
           <table>
             <thead>
               <tr>
-                <th scope="col">Descricao</th>
+                <th scope="col">Descrição</th>
                 <th scope="col">Categoria</th>
                 <th scope="col">Valor</th>
                 <th scope="col" class="action-column">Remover</th>
@@ -146,7 +146,7 @@
         <section class="panel expenses-panel" aria-labelledby="variableTitle">
           <header class="panel-header">
             <div>
-              <p class="eyebrow">Compras do mes</p>
+              <p class="eyebrow">Compras do mês</p>
               <h2 id="variableTitle">Gastos variados</h2>
             </div>
             <button class="icon-button add-row" type="button" data-target="variableExpensesBody" aria-label="Adicionar gasto variado">+</button>
@@ -155,7 +155,7 @@
           <table>
             <thead>
               <tr>
-                <th scope="col">Descricao</th>
+                <th scope="col">Descrição</th>
                 <th scope="col">Categoria</th>
                 <th scope="col">Valor</th>
                 <th scope="col" class="action-column">Remover</th>
@@ -170,17 +170,17 @@
         <section class="panel chart-panel" aria-labelledby="chartTitle">
           <header class="panel-header">
             <div>
-              <p class="eyebrow">Visualizacao</p>
-              <h2 id="chartTitle">Distribuicao do salario</h2>
+              <p class="eyebrow">Visualização</p>
+              <h2 id="chartTitle">Distribuição do salário</h2>
             </div>
           </header>
           <div class="chart-content">
             <figure class="chart-wrap">
-              <canvas id="financeChart" aria-label="Grafico de pizza com gastos e saldo" role="img"></canvas>
-              <figcaption class="sr-only">Distribuicao entre gastos fixos, gastos variados e saldo restante.</figcaption>
-              <p class="empty-state" id="chartEmpty">Informe o salario ou gastos para visualizar o grafico.</p>
+              <canvas id="financeChart" aria-label="Gráfico de pizza com gastos e saldo" role="img"></canvas>
+              <figcaption class="sr-only">Distribuição entre gastos fixos, gastos variados e saldo restante.</figcaption>
+              <p class="empty-state" id="chartEmpty">Informe o salário ou gastos para visualizar o gráfico.</p>
             </figure>
-            <ul class="chart-legend" id="chartLegend" aria-label="Legenda do grafico"></ul>
+            <ul class="chart-legend" id="chartLegend" aria-label="Legenda do gráfico"></ul>
           </div>
         </section>
 
@@ -194,7 +194,7 @@
 
           <dl class="summary-list">
             <div>
-              <dt>Salario</dt>
+              <dt>Salário</dt>
               <dd id="summarySalary">R$ 0,00</dd>
             </div>
             <div>
@@ -214,11 +214,11 @@
               <dd id="summaryBalance">R$ 0,00</dd>
             </div>
             <div>
-              <dt>Salario gasto</dt>
+              <dt>Salário gasto</dt>
               <dd id="summaryCommitted">0%</dd>
             </div>
             <div>
-              <dt>Salario disponível</dt>
+              <dt>Salário disponível</dt>
               <dd id="summaryAvailable">0%</dd>
             </div>
           </dl>
@@ -227,18 +227,18 @@
         </aside>
       </section>
 
-      <section class="insights-grid" aria-label="Analise do historico mensal">
+      <section class="insights-grid" aria-label="Análise do histórico mensal">
         <section class="panel comparison-panel" aria-labelledby="comparisonTitle">
           <header class="panel-header">
             <div>
-              <p class="eyebrow">Comparacao</p>
+              <p class="eyebrow">Comparação</p>
               <h2 id="comparisonTitle">Entre meses</h2>
             </div>
           </header>
 
           <div class="comparison-content">
             <div class="comparison-controls">
-              <label for="compareBaseMonth">Mes base</label>
+              <label for="compareBaseMonth">Mês base</label>
               <select id="compareBaseMonth"></select>
               <label for="compareTargetMonth">Comparar com</label>
               <select id="compareTargetMonth"></select>
@@ -247,7 +247,7 @@
             <p class="field-hint" id="comparisonEmpty">Salve pelo menos dois meses para comparar.</p>
             <dl class="comparison-list" id="comparisonList" hidden>
               <div>
-                <dt>Salario</dt>
+                <dt>Salário</dt>
                 <dd id="comparisonSalary">R$ 0,00</dd>
               </div>
               <div>
@@ -273,14 +273,14 @@
         <section class="panel evolution-panel" aria-labelledby="evolutionTitle">
           <header class="panel-header">
             <div>
-              <p class="eyebrow">Evolucao</p>
-              <h2 id="evolutionTitle">Historico mensal</h2>
+              <p class="eyebrow">Evolução</p>
+              <h2 id="evolutionTitle">Histórico mensal</h2>
             </div>
           </header>
 
           <div class="evolution-chart-wrap">
-            <canvas id="evolutionChart" aria-label="Grafico de evolucao mensal de gastos e saldo" role="img"></canvas>
-            <p class="empty-state" id="evolutionEmpty">Salve pelo menos dois meses para visualizar a evolucao.</p>
+            <canvas id="evolutionChart" aria-label="Gráfico de evolução mensal de gastos e saldo" role="img"></canvas>
+            <p class="empty-state" id="evolutionEmpty">Salve pelo menos dois meses para visualizar a evolução.</p>
           </div>
         </section>
       </section>
@@ -292,8 +292,8 @@
     <template id="expenseRowTemplate">
       <tr>
         <td>
-          <label class="sr-only description-label">Descricao do gasto</label>
-          <input class="description-input" type="text" maxlength="80" placeholder="Descricao">
+          <label class="sr-only description-label">Descrição do gasto</label>
+          <input class="description-input" type="text" maxlength="80" placeholder="Descrição">
         </td>
         <td>
           <label class="sr-only category-label">Categoria opcional</label>

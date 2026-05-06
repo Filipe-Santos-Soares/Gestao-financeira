@@ -59,7 +59,7 @@ def login():
         repository.close()
 
     if not user or not verify_password(user.password_hash, password):
-        return render_login(error="Usuario ou senha invalidos."), 401
+        return render_login(error="Usuário ou senha inválidos."), 401
 
     session["user_id"] = user.id
     session["user_name"] = user.name
@@ -74,23 +74,23 @@ def register():
     password_confirmation = request.form.get("password_confirmation", "")
 
     if not name or not password:
-        return render_login(register_error="Informe usuario e senha para criar a conta."), 400
+        return render_login(register_error="Informe usuário e senha para criar a conta."), 400
 
     if len(name) < 3:
-        return render_login(register_error="O usuario deve ter pelo menos 3 caracteres."), 400
+        return render_login(register_error="O usuário deve ter pelo menos 3 caracteres."), 400
 
     if len(password) < 8:
         return render_login(register_error="A senha deve ter pelo menos 8 caracteres."), 400
 
     if password != password_confirmation:
-        return render_login(register_error="A confirmacao de senha nao confere."), 400
+        return render_login(register_error="A confirmação de senha não confere."), 400
 
     repository = get_auth_repository()
     try:
         existing_user = repository.get_user_by_name(name)
 
         if existing_user:
-            return render_login(register_error="Este usuario ja existe. Escolha outro nome."), 409
+            return render_login(register_error="Este usuário já existe. Escolha outro nome."), 409
 
         user = repository.create_user(name, hash_password(password))
     finally:

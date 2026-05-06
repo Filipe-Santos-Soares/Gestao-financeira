@@ -30,12 +30,12 @@ class AppTest(unittest.TestCase):
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Gestao Financeira", response.data)
+        self.assertIn("Gestão Financeira".encode(), response.data)
         self.assertIn(b"financeChart", response.data)
         self.assertIn(b'<meta name="app-version" content="1.1">', response.data)
         self.assertIn(b'name="csrf-token"', response.data)
         self.assertIn(b"Login", response.data)
-        self.assertIn(b"Mes", response.data)
+        self.assertIn("Mês".encode(), response.data)
         self.assertIn(b"Ano", response.data)
         self.assertIn(b"Salvar", response.data)
         self.assertNotIn(b'id="loadBudgetButton"', response.data)
@@ -46,7 +46,7 @@ class AppTest(unittest.TestCase):
         self.assertIn(b"Meses salvos", response.data)
         self.assertIn(b'id="savedMonthsList"', response.data)
         self.assertIn(b"Entre meses", response.data)
-        self.assertIn(b"Historico mensal", response.data)
+        self.assertIn("Histórico mensal".encode(), response.data)
         self.assertIn(b"Gerenciar", response.data)
         self.assertIn(b'id="fixedCategoryOptions"', response.data)
         self.assertIn(b'id="variableCategoryOptions"', response.data)
@@ -65,7 +65,7 @@ class AppTest(unittest.TestCase):
         response = self.client.get("/pagina-inexistente")
 
         self.assertEqual(response.status_code, 404)
-        self.assertIn(b"Pagina nao encontrada", response.data)
+        self.assertIn("Página não encontrada".encode(), response.data)
 
     def test_login_with_local_user(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -76,12 +76,12 @@ class AppTest(unittest.TestCase):
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 response = self.client.post(
                     "/login",
-                    data={"name": "Usuario local", "password": "local", "csrf_token": csrf_token},
+                    data={"name": "Usuário local", "password": "local", "csrf_token": csrf_token},
                     follow_redirects=True,
                 )
 
             self.assertEqual(response.status_code, 200)
-            self.assertIn(b"Usuario local", response.data)
+            self.assertIn("Usuário local".encode(), response.data)
             self.assertIn(b"Sair", response.data)
 
     def test_invalid_login_shows_error(self):
@@ -93,11 +93,11 @@ class AppTest(unittest.TestCase):
             with patch.object(auth_routes, "DATABASE_PATH", database_path):
                 response = self.client.post(
                     "/login",
-                    data={"name": "Usuario local", "password": "senha-errada", "csrf_token": csrf_token},
+                    data={"name": "Usuário local", "password": "senha-errada", "csrf_token": csrf_token},
                 )
 
             self.assertEqual(response.status_code, 401)
-            self.assertIn(b"Usuario ou senha invalidos.", response.data)
+            self.assertIn("Usuário ou senha inválidos.".encode(), response.data)
 
     def test_register_creates_user_and_logs_in(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -130,7 +130,7 @@ class AppTest(unittest.TestCase):
                 first_response = self.client.post(
                     "/register",
                     data={
-                        "name": "Usuario local",
+                        "name": "Usuário local",
                         "password": "senha-segura",
                         "password_confirmation": "senha-segura",
                         "csrf_token": csrf_token,
@@ -138,7 +138,7 @@ class AppTest(unittest.TestCase):
                 )
 
             self.assertEqual(first_response.status_code, 409)
-            self.assertIn(b"Este usuario ja existe.", first_response.data)
+            self.assertIn("Este usuário já existe.".encode(), first_response.data)
 
     def test_register_requires_matching_password_confirmation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -157,7 +157,7 @@ class AppTest(unittest.TestCase):
                 )
 
             self.assertEqual(response.status_code, 400)
-            self.assertIn(b"A confirmacao de senha nao confere.", response.data)
+            self.assertIn("A confirmação de senha não confere.".encode(), response.data)
 
     def test_register_requires_minimum_password_length(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -182,12 +182,12 @@ class AppTest(unittest.TestCase):
         csrf_token = self.get_csrf_token()
         with self.client.session_transaction() as session:
             session["user_id"] = 1
-            session["user_name"] = "Usuario local"
+            session["user_name"] = "Usuário local"
 
         response = self.client.post("/logout", data={"csrf_token": csrf_token}, follow_redirects=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Gestao Financeira", response.data)
+        self.assertIn("Gestão Financeira".encode(), response.data)
         self.assertIn(b"Login", response.data)
 
     def test_summary_endpoint(self):
@@ -423,7 +423,7 @@ class AppTest(unittest.TestCase):
         data = response.get_json()
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Sessao expirada", data["message"])
+        self.assertIn("Sessão expirada", data["message"])
 
     def test_month_budget_rejects_invalid_period(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -439,7 +439,7 @@ class AppTest(unittest.TestCase):
                 invalid_year_response = self.client.get("/api/month-budget?month=5&year=1899")
 
             self.assertEqual(invalid_month_response.status_code, 400)
-            self.assertIn("mes entre 1 e 12", invalid_month_response.get_json()["message"])
+            self.assertIn("mês entre 1 e 12", invalid_month_response.get_json()["message"])
             self.assertEqual(invalid_year_response.status_code, 400)
             self.assertIn("ano entre 1900 e 9999", invalid_year_response.get_json()["message"])
 

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - Gestao Financeira</title>
+    <title>Login - Gestão Financeira</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=app_version) }}">
   </head>
   <body class="auth-page">
@@ -22,7 +22,7 @@
             <p class="status-message is-negative">{{ error }}</p>
           {% endif %}
 
-          <label for="name">Usuario</label>
+          <label for="name">Usuário</label>
           <input id="name" name="name" type="text" autocomplete="username" required>
 
           <label for="password">Senha</label>
@@ -43,7 +43,7 @@
             <p class="status-message is-negative">{{ register_error }}</p>
           {% endif %}
 
-          <label for="registerName">Usuario</label>
+          <label for="registerName">Usuário</label>
           <input id="registerName" name="name" type="text" autocomplete="username" required>
 
           <label for="registerPassword">Senha</label>

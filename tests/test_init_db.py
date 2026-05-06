@@ -17,14 +17,14 @@ class InitDbTest(unittest.TestCase):
 
             repository = SQLiteBudgetRepository(database_path)
             try:
-                local_user = repository.get_user_by_name("Usuario local")
+                local_user = repository.get_user_by_name("Usuário local")
             finally:
                 repository.close()
 
             self.assertEqual(first_path, database_path)
             self.assertEqual(second_path, database_path)
             self.assertEqual(first_user.id, second_user.id)
-            self.assertEqual(local_user.name, "Usuario local")
+            self.assertEqual(local_user.name, "Usuário local")
             self.assertTrue(verify_password(local_user.password_hash, "local"))
             self.assertFalse(hasattr(local_user, "email"))
 

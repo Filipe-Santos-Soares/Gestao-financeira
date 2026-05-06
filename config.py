@@ -17,11 +17,11 @@ DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", DEFAULT_DATABASE_PATH))
 DEFAULT_SECRET_KEY = "dev-secret-key-change-before-deploy"
 SECRET_KEY = os.environ.get("SECRET_KEY", DEFAULT_SECRET_KEY)
 
-LOCAL_USER_NAME = os.environ.get("LOCAL_USER_NAME", "Usuario local")
+LOCAL_USER_NAME = os.environ.get("LOCAL_USER_NAME", "Usuário local")
 LOCAL_USER_PASSWORD = os.environ.get("LOCAL_USER_PASSWORD", "local")
 CREATE_LOCAL_USER = os.environ.get("CREATE_LOCAL_USER", "true").lower() in {"1", "true", "yes"}
 
 
 def validate_runtime_config():
     if IS_PRODUCTION and SECRET_KEY == DEFAULT_SECRET_KEY:
-        raise RuntimeError("Defina SECRET_KEY antes de executar em producao.")
+        raise RuntimeError("Defina SECRET_KEY antes de executar em produção.")

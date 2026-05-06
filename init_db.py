@@ -41,6 +41,6 @@ if __name__ == "__main__":
     print(f"Banco inicializado em: {path}")
 
     if user:
-        print(f"Usuario local: {user.name} (id={user.id})")
+        print(f"Usuário local: {user.name} (id={user.id})")
     else:
-        print("Usuario local automatico desativado.")
+        print("Usuário local automático desativado.")
