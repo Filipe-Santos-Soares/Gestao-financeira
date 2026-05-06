@@ -1,6 +1,6 @@
 # Gestão Financeira
 
-Aplicativo Flask para controle financeiro mensal com salário, gastos fixos, gastos variados, resumo, gráficos, histórico mensal e categorias gerenciáveis.
+Aplicativo Flask para controle financeiro mensal com salário, gastos fixos, gastos variados, resumo, gráficos, histórico mensal, categorias gerenciáveis e metas opcionais por categoria.
 
 Versão atual: 1.1
 

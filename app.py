@@ -123,6 +123,7 @@ def category_to_dict(category):
         "id": category.id,
         "name": category.name,
         "type": category.type,
+        "goal_amount": float(category.goal_amount) if category.goal_amount is not None else None,
     }
 
 
@@ -213,6 +214,7 @@ def create_category():
     payload = request.get_json(silent=True) or {}
     name = str(payload.get("name", "")).strip()
     category_type = str(payload.get("type", "both")).strip() or "both"
+    goal_amount = payload.get("goal_amount", "")
 
     if category_type not in {"fixed", "variable", "both"}:
         return jsonify({"created": False, "message": "Tipo de categoria inválido."}), 400
@@ -241,7 +243,7 @@ def create_category():
                 409,
             )
 
-        category = repository.create_category(user.id, name, category_type)
+        category = repository.create_category(user.id, name, category_type, goal_amount)
 
         return jsonify({"created": True, "category": category_to_dict(category)})
     finally:
@@ -254,6 +256,7 @@ def update_category(category_id):
     payload = request.get_json(silent=True) or {}
     name = str(payload.get("name", "")).strip()
     category_type = str(payload.get("type", "both")).strip() or "both"
+    goal_amount = payload.get("goal_amount", "")
 
     if category_type not in {"fixed", "variable", "both"}:
         return jsonify({"updated": False, "message": "Tipo de categoria inválido."}), 400
@@ -287,7 +290,7 @@ def update_category(category_id):
                 409,
             )
 
-        updated_category = repository.update_category(category_id, name, category_type)
+        updated_category = repository.update_category(category_id, name, category_type, goal_amount)
 
         return jsonify({"updated": True, "category": category_to_dict(updated_category)})
     finally:

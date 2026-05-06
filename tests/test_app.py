@@ -48,6 +48,8 @@ class AppTest(unittest.TestCase):
         self.assertIn(b"Entre meses", response.data)
         self.assertIn("Histórico mensal".encode(), response.data)
         self.assertIn(b"Gerenciar", response.data)
+        self.assertIn(b'id="categoryGoalInput"', response.data)
+        self.assertIn(b'id="categoryGoalsList"', response.data)
         self.assertIn(b'id="fixedCategoryOptions"', response.data)
         self.assertIn(b'id="variableCategoryOptions"', response.data)
         self.assertIn(b'autocomplete="off"', response.data)
@@ -328,7 +330,7 @@ class AppTest(unittest.TestCase):
                 create_response = self.client.post(
                     "/api/categories",
                     headers=headers,
-                    json={"name": "Moradia", "type": "fixed"},
+                    json={"name": "Moradia", "type": "fixed", "goal_amount": "1200,00"},
                 )
                 list_response = self.client.get("/api/categories")
 
@@ -338,8 +340,10 @@ class AppTest(unittest.TestCase):
             self.assertEqual(create_response.status_code, 200)
             self.assertTrue(create_data["created"])
             self.assertEqual(create_data["category"]["name"], "Moradia")
+            self.assertEqual(create_data["category"]["goal_amount"], 1200.00)
             self.assertEqual(list_response.status_code, 200)
             self.assertEqual(list_data["categories"][0]["type"], "fixed")
+            self.assertEqual(list_data["categories"][0]["goal_amount"], 1200.00)
 
     def test_create_category_rejects_duplicate(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -374,7 +378,7 @@ class AppTest(unittest.TestCase):
                 update_response = self.client.post(
                     f"/api/categories/{category_id}/update",
                     headers=headers,
-                    json={"name": "Moradia", "type": "both"},
+                    json={"name": "Moradia", "type": "both", "goal_amount": "900,50"},
                 )
                 delete_response = self.client.post(
                     f"/api/categories/{category_id}/delete",
@@ -389,6 +393,7 @@ class AppTest(unittest.TestCase):
             self.assertTrue(update_data["updated"])
             self.assertEqual(update_data["category"]["name"], "Moradia")
             self.assertEqual(update_data["category"]["type"], "both")
+            self.assertEqual(update_data["category"]["goal_amount"], 900.50)
             self.assertEqual(delete_response.status_code, 200)
             self.assertEqual(list_data["categories"], [])
 

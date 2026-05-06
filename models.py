@@ -40,5 +40,6 @@ class Category:
     user_id: int
     name: str
     type: str
+    goal_amount: Decimal | None = None
     created_at: str | None = None
     updated_at: str | None = None

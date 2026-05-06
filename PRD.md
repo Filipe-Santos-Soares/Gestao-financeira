@@ -490,6 +490,8 @@ Status atual:
 - As sugestoes de categorias por tipo foram ajustadas: categorias `fixed` aparecem em gastos fixos, categorias `variable` aparecem em gastos variados, e categorias `both` aparecem em ambos.
 - Acoes mutaveis passam a exigir token CSRF.
 - As APIs de orcamento mensal validam mes e ano antes de acessar o banco.
+- Metas mensais opcionais por categoria foram adicionadas ao cadastro de categorias.
+- O painel passa a acompanhar o gasto atual em relacao a meta de cada categoria.
 
 ### Versao 8 - Responsividade mobile avancada
 

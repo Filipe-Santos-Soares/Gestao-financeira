@@ -34,6 +34,8 @@
 - Ajustadas sugestões de categorias por tipo de gasto.
 - Adicionada validação de mês e ano nas APIs de orçamento mensal.
 - Adicionada proteção CSRF em ações mutáveis e configuração mais restrita para cookies de sessão.
+- Adicionadas metas mensais opcionais por categoria.
+- Adicionado painel de acompanhamento de gasto atual contra meta por categoria.
 
 ## 1.0 - Versao inicial
 

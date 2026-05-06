@@ -95,30 +95,6 @@
             <ul class="saved-months-list" id="savedMonthsList" aria-label="Meses com orçamento salvo"></ul>
           </section>
 
-          <section class="category-manager" aria-labelledby="categoryManagerTitle">
-            <header class="saved-months-header">
-              <div>
-                <p class="eyebrow">Categorias</p>
-                <h3 id="categoryManagerTitle">Gerenciar</h3>
-              </div>
-            </header>
-
-            <form class="category-form" id="categoryForm">
-              <label for="categoryNameInput">Nome</label>
-              <input id="categoryNameInput" name="categoryName" type="text" maxlength="40" autocomplete="off">
-              <label for="categoryTypeInput">Tipo</label>
-              <select id="categoryTypeInput" name="categoryType">
-                <option value="both">Ambos</option>
-                <option value="fixed">Fixo</option>
-                <option value="variable">Variado</option>
-              </select>
-              <button class="secondary-button compact-button" id="categorySubmitButton" type="submit">Adicionar</button>
-              <button class="secondary-button compact-button" id="categoryCancelButton" type="button" hidden>Cancelar</button>
-            </form>
-
-            <p class="field-hint" id="categoryStatus">Categorias aparecem como sugestão nos gastos.</p>
-            <ul class="category-list" id="categoryList" aria-label="Categorias cadastradas"></ul>
-          </section>
         </section>
 
         <section class="panel expenses-panel" aria-labelledby="fixedTitle">
@@ -181,6 +157,35 @@
               <p class="empty-state" id="chartEmpty">Informe o salário ou gastos para visualizar o gráfico.</p>
             </figure>
             <ul class="chart-legend" id="chartLegend" aria-label="Legenda do gráfico"></ul>
+          </div>
+        </section>
+
+        <section class="panel category-manager" aria-labelledby="categoryManagerTitle">
+          <header class="panel-header">
+            <div>
+              <p class="eyebrow">Categorias</p>
+              <h2 id="categoryManagerTitle">Gerenciar</h2>
+            </div>
+          </header>
+
+          <div class="category-manager-content">
+            <form class="category-form" id="categoryForm">
+              <label for="categoryNameInput">Nome</label>
+              <input id="categoryNameInput" name="categoryName" type="text" maxlength="40" autocomplete="off" placeholder="Nome">
+              <label for="categoryTypeInput">Tipo</label>
+              <select id="categoryTypeInput" name="categoryType">
+                <option value="both">Ambos</option>
+                <option value="fixed">Fixo</option>
+                <option value="variable">Variado</option>
+              </select>
+              <label for="categoryGoalInput">Meta mensal</label>
+              <input id="categoryGoalInput" name="categoryGoal" type="text" inputmode="decimal" maxlength="14" autocomplete="off" placeholder="Meta">
+              <button class="secondary-button compact-button" id="categorySubmitButton" type="submit">Adicionar</button>
+              <button class="secondary-button compact-button" id="categoryCancelButton" type="button" hidden>Cancelar</button>
+            </form>
+
+            <p class="field-hint" id="categoryStatus">Categorias aparecem como sugestão nos gastos.</p>
+            <ul class="category-list" id="categoryList" aria-label="Categorias cadastradas"></ul>
           </div>
         </section>
 
@@ -267,6 +272,20 @@
                 <dd id="comparisonBalance">R$ 0,00</dd>
               </div>
             </dl>
+          </div>
+        </section>
+
+        <section class="panel category-goals-panel" aria-labelledby="categoryGoalsTitle">
+          <header class="panel-header">
+            <div>
+              <p class="eyebrow">Metas</p>
+              <h2 id="categoryGoalsTitle">Por categoria</h2>
+            </div>
+          </header>
+
+          <div class="category-goals-content">
+            <p class="field-hint" id="categoryGoalsEmpty">Cadastre uma meta em uma categoria para acompanhar o limite mensal.</p>
+            <ul class="category-goals-list" id="categoryGoalsList" aria-label="Metas por categoria"></ul>
           </div>
         </section>
 

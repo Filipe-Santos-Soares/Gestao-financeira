@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS categories (
   user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   type TEXT NOT NULL DEFAULT 'both' CHECK (type IN ('fixed', 'variable', 'both')),
+  goal_amount TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (user_id, name, type)
@@ -65,6 +66,25 @@ def money_to_storage(value):
 
 
 def storage_to_money(value):
+    return Decimal(str(value)).quantize(MONEY_QUANT)
+
+
+def optional_money_to_storage(value):
+    if value is None or value == "":
+        return ""
+
+    amount = to_decimal(value).quantize(MONEY_QUANT)
+
+    if amount <= 0:
+        return ""
+
+    return str(amount)
+
+
+def optional_storage_to_money(value):
+    if value is None or value == "":
+        return None
+
     return Decimal(str(value)).quantize(MONEY_QUANT)
 
 
@@ -97,7 +117,14 @@ class SQLiteBudgetRepository:
     def init_schema(self):
         schema = SCHEMA_PATH.read_text(encoding="utf-8")
         self.connection.executescript(schema)
+        self.ensure_category_goal_column()
         self.connection.commit()
+
+    def ensure_category_goal_column(self):
+        columns = {row["name"] for row in self.fetchall("PRAGMA table_info(categories)")}
+
+        if "goal_amount" not in columns:
+            self.execute("ALTER TABLE categories ADD COLUMN goal_amount TEXT NOT NULL DEFAULT ''")
 
     def create_user(self, name, password_hash):
         user_id = self.insert_and_get_id(
@@ -344,26 +371,26 @@ class SQLiteBudgetRepository:
 
         return cursor.rowcount > 0
 
-    def create_category(self, user_id, name, category_type="both"):
+    def create_category(self, user_id, name, category_type="both", goal_amount=""):
         category_id = self.insert_and_get_id(
             """
-            INSERT INTO categories (user_id, name, type)
-            VALUES (?, ?, ?)
+            INSERT INTO categories (user_id, name, type, goal_amount)
+            VALUES (?, ?, ?, ?)
             """,
-            (user_id, name.strip(), category_type),
+            (user_id, name.strip(), category_type, optional_money_to_storage(goal_amount)),
         )
         self.connection.commit()
 
         return self.get_category(category_id)
 
-    def update_category(self, category_id, name, category_type="both"):
+    def update_category(self, category_id, name, category_type="both", goal_amount=""):
         self.execute(
             """
             UPDATE categories
-            SET name = ?, type = ?, updated_at = CURRENT_TIMESTAMP
+            SET name = ?, type = ?, goal_amount = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
-            (name.strip(), category_type, category_id),
+            (name.strip(), category_type, optional_money_to_storage(goal_amount), category_id),
         )
         self.connection.commit()
 
@@ -384,7 +411,7 @@ class SQLiteBudgetRepository:
     def get_category(self, category_id):
         row = self.fetchone(
             """
-            SELECT id, user_id, name, type, created_at, updated_at
+            SELECT id, user_id, name, type, goal_amount, created_at, updated_at
             FROM categories
             WHERE id = ?
             """,
@@ -396,7 +423,7 @@ class SQLiteBudgetRepository:
     def get_category_by_name_and_type(self, user_id, name, category_type):
         row = self.fetchone(
             """
-            SELECT id, user_id, name, type, created_at, updated_at
+            SELECT id, user_id, name, type, goal_amount, created_at, updated_at
             FROM categories
             WHERE user_id = ? AND lower(name) = lower(?) AND type = ?
             LIMIT 1
@@ -409,7 +436,7 @@ class SQLiteBudgetRepository:
     def list_categories(self, user_id):
         rows = self.fetchall(
             """
-            SELECT id, user_id, name, type, created_at, updated_at
+            SELECT id, user_id, name, type, goal_amount, created_at, updated_at
             FROM categories
             WHERE user_id = ?
             ORDER BY lower(name), type
@@ -457,6 +484,7 @@ class SQLiteBudgetRepository:
             user_id=row["user_id"],
             name=row["name"],
             type=row["type"],
+            goal_amount=optional_storage_to_money(row["goal_amount"]),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
@@ -494,6 +522,7 @@ class PostgreSQLBudgetRepository(SQLiteBudgetRepository):
 
             if statement:
                 self.connection.execute(statement)
+        self.connection.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS goal_amount TEXT NOT NULL DEFAULT ''")
         self.connection.commit()
 
     def close(self):

@@ -257,11 +257,11 @@ button:disabled {
 }
 
 .bottom-grid {
-  grid-template-columns: minmax(360px, 1.35fr) minmax(320px, 0.65fr);
+  grid-template-columns: minmax(340px, 1.05fr) minmax(300px, 0.85fr) minmax(300px, 0.75fr);
 }
 
 .insights-grid {
-  grid-template-columns: minmax(320px, 0.8fr) minmax(420px, 1.2fr);
+  grid-template-columns: minmax(300px, 0.8fr) minmax(300px, 0.8fr) minmax(420px, 1.2fr);
 }
 
 .panel {
@@ -456,16 +456,36 @@ td input {
 
 .category-manager {
   display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.category-manager-content {
+  display: grid;
   gap: 12px;
-  padding: 18px 20px 20px;
-  border-top: 1px solid var(--border);
+  padding: 20px;
 }
 
 .category-form {
   display: grid;
-  grid-template-columns: 1fr 110px auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.65fr);
   gap: 8px;
   align-items: end;
+}
+
+.category-form .secondary-button {
+  width: 100%;
+}
+
+#categoryNameInput {
+  grid-column: 1 / -1;
+}
+
+#categorySubmitButton {
+  grid-column: 1;
+}
+
+#categoryCancelButton {
+  grid-column: 2;
 }
 
 .category-form label {
@@ -522,9 +542,9 @@ td input {
 }
 
 .category-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   min-width: 0;
 }
@@ -532,6 +552,8 @@ td input {
 .category-chip {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 2px;
   max-width: 100%;
   min-height: 28px;
   padding: 0 9px;
@@ -551,7 +573,8 @@ td input {
 
 .category-action-button {
   min-height: 28px;
-  padding: 0 8px;
+  min-width: 68px;
+  padding: 0 7px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #ffffff;
@@ -576,6 +599,93 @@ td input {
   margin-left: 6px;
   color: var(--muted);
   font-weight: 400;
+}
+
+.category-goals-content {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.category-goals-list {
+  display: grid;
+  gap: 10px;
+  max-height: 300px;
+  margin: 0;
+  padding: 0 8px 18px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  list-style: none;
+}
+
+.category-goal-item {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+.category-goal-item.is-warning {
+  border-color: var(--accent);
+}
+
+.category-goal-item.is-over {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.category-goal-header,
+.category-goal-values {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.category-goal-header strong {
+  font-size: 14px;
+}
+
+.category-goal-type,
+.category-goal-values,
+.category-goal-status {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.category-goal-values,
+.category-goal-status {
+  margin: 0;
+}
+
+.category-goal-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.category-goal-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.category-goal-item.is-warning .category-goal-progress span {
+  background: var(--accent);
+}
+
+.category-goal-item.is-over .category-goal-progress span {
+  background: var(--danger);
+}
+
+.category-goal-item.is-over .category-goal-status {
+  color: var(--danger);
+  font-weight: 700;
 }
 
 .icon-button {
@@ -984,6 +1094,12 @@ td input.is-invalid {
   .category-form,
   .comparison-controls {
     grid-template-columns: 1fr;
+  }
+
+  .category-form input,
+  .category-form select,
+  .category-form button {
+    width: 100%;
   }
 
   .app-header h1 {

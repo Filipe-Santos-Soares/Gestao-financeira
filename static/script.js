@@ -30,10 +30,13 @@ const comparisonList = document.querySelector("#comparisonList");
 const categoryForm = document.querySelector("#categoryForm");
 const categoryNameInput = document.querySelector("#categoryNameInput");
 const categoryTypeInput = document.querySelector("#categoryTypeInput");
+const categoryGoalInput = document.querySelector("#categoryGoalInput");
 const categorySubmitButton = document.querySelector("#categorySubmitButton");
 const categoryCancelButton = document.querySelector("#categoryCancelButton");
 const categoryStatus = document.querySelector("#categoryStatus");
 const categoryList = document.querySelector("#categoryList");
+const categoryGoalsEmpty = document.querySelector("#categoryGoalsEmpty");
+const categoryGoalsList = document.querySelector("#categoryGoalsList");
 const fixedCategoryOptions = document.querySelector("#fixedCategoryOptions");
 const variableCategoryOptions = document.querySelector("#variableCategoryOptions");
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
@@ -94,6 +97,23 @@ function getDefaultPeriod() {
 
 function formatPeriod(month, year) {
   return `${String(month).padStart(2, "0")}/${year}`;
+}
+
+function normalizeCategoryName(name) {
+  return String(name || "").trim().toLocaleLowerCase("pt-BR");
+}
+
+function parseMoneyValue(value) {
+  const sanitized = sanitizeMoneyText(value);
+
+  if (!sanitized) {
+    return 0;
+  }
+
+  const normalized = sanitized.replace(/\./g, "").replace(",", ".");
+  const numberValue = Number(normalized);
+
+  return Number.isNaN(numberValue) ? 0 : numberValue;
 }
 
 function getSelectedPeriod() {
@@ -435,6 +455,7 @@ function renderCategories() {
     const item = document.createElement("li");
     const chip = document.createElement("span");
     const type = document.createElement("span");
+    const goal = document.createElement("span");
     const actions = document.createElement("span");
     const editButton = document.createElement("button");
     const deleteButton = document.createElement("button");
@@ -445,6 +466,11 @@ function renderCategories() {
     chip.textContent = category.name;
     type.textContent = categoryTypeLabels[category.type] || category.type;
     chip.appendChild(type);
+
+    if (category.goal_amount) {
+      goal.textContent = `Meta ${currencyFormatter.format(category.goal_amount)}`;
+      chip.appendChild(goal);
+    }
 
     actions.className = "category-actions";
 
@@ -462,12 +488,15 @@ function renderCategories() {
     item.append(chip, actions);
     categoryList.appendChild(item);
   });
+
+  renderCategoryGoals();
 }
 
 function resetCategoryForm() {
   editingCategoryId = null;
   categoryNameInput.value = "";
   categoryTypeInput.value = "both";
+  categoryGoalInput.value = "";
   categorySubmitButton.textContent = "Adicionar";
   categoryCancelButton.hidden = true;
 }
@@ -476,6 +505,7 @@ function startEditingCategory(category) {
   editingCategoryId = category.id;
   categoryNameInput.value = category.name;
   categoryTypeInput.value = category.type;
+  categoryGoalInput.value = formatAmountForInput(category.goal_amount);
   categorySubmitButton.textContent = "Salvar";
   categoryCancelButton.hidden = false;
   categoryNameInput.focus();
@@ -494,6 +524,7 @@ async function loadCategories() {
     const data = await response.json();
     categories = data.categories || [];
     renderCategories();
+    renderCategoryGoals();
   } catch {
     categoryStatus.textContent = "Não foi possível carregar as categorias.";
   }
@@ -504,6 +535,7 @@ async function saveCategory(event) {
 
   const name = categoryNameInput.value.trim();
   const type = categoryTypeInput.value;
+  const goalAmount = categoryGoalInput.value.trim();
 
   if (!name) {
     categoryStatus.textContent = "Informe o nome da categoria.";
@@ -515,7 +547,7 @@ async function saveCategory(event) {
     const response = await fetch(url, {
       method: "POST",
       headers: jsonHeaders(true),
-      body: JSON.stringify({ name, type }),
+      body: JSON.stringify({ name, type, goal_amount: goalAmount }),
     });
     const data = await response.json();
 
@@ -534,6 +566,81 @@ async function saveCategory(event) {
     categoryStatus.textContent = "Não foi possível salvar a categoria.";
     showFeedbackPopup(categoryStatus.textContent);
   }
+}
+
+function collectCategorySpending() {
+  return [
+    ...[...fixedBody.querySelectorAll("tr")].map((row) => ({
+      type: "fixed",
+      category: row.querySelector(".category-input").value,
+      amount: parseMoneyValue(row.querySelector(".amount-input").value),
+    })),
+    ...[...variableBody.querySelectorAll("tr")].map((row) => ({
+      type: "variable",
+      category: row.querySelector(".category-input").value,
+      amount: parseMoneyValue(row.querySelector(".amount-input").value),
+    })),
+  ];
+}
+
+function getCategorySpent(category, spendingItems) {
+  const categoryName = normalizeCategoryName(category.name);
+
+  return spendingItems
+    .filter((item) => normalizeCategoryName(item.category) === categoryName)
+    .filter((item) => categoryAppliesToExpenseType(category, item.type))
+    .reduce((sum, item) => sum + item.amount, 0);
+}
+
+function renderCategoryGoals() {
+  const categoriesWithGoals = categories.filter((category) => Number(category.goal_amount) > 0);
+  categoryGoalsList.innerHTML = "";
+
+  if (!categoriesWithGoals.length) {
+    categoryGoalsEmpty.hidden = false;
+    return;
+  }
+
+  categoryGoalsEmpty.hidden = true;
+
+  const spendingItems = collectCategorySpending();
+
+  categoriesWithGoals.forEach((category) => {
+    const goalAmount = Number(category.goal_amount);
+    const spentAmount = getCategorySpent(category, spendingItems);
+    const percentage = goalAmount > 0 ? (spentAmount / goalAmount) * 100 : 0;
+    const item = document.createElement("li");
+    const header = document.createElement("div");
+    const name = document.createElement("strong");
+    const type = document.createElement("span");
+    const values = document.createElement("p");
+    const progress = document.createElement("div");
+    const progressBar = document.createElement("span");
+    const status = document.createElement("p");
+
+    item.className = "category-goal-item";
+    item.classList.toggle("is-warning", percentage >= 80 && percentage < 100);
+    item.classList.toggle("is-over", percentage >= 100);
+    header.className = "category-goal-header";
+    type.className = "category-goal-type";
+    values.className = "category-goal-values";
+    progress.className = "category-goal-progress";
+    status.className = "category-goal-status";
+
+    name.textContent = category.name;
+    type.textContent = categoryTypeLabels[category.type] || category.type;
+    values.textContent = `${currencyFormatter.format(spentAmount)} de ${currencyFormatter.format(goalAmount)}`;
+    progressBar.style.width = `${Math.min(percentage, 100)}%`;
+    status.textContent =
+      percentage >= 100
+        ? `Meta ultrapassada em ${currencyFormatter.format(spentAmount - goalAmount)}.`
+        : `${percentFormatter.format(percentage)}% da meta usada.`;
+
+    header.append(name, type);
+    progress.appendChild(progressBar);
+    item.append(header, values, progress, status);
+    categoryGoalsList.appendChild(item);
+  });
 }
 
 async function deleteCategory(category) {
@@ -977,6 +1084,7 @@ async function refreshSummary() {
   const summary = await response.json();
   renderSummary(summary);
   renderChart(summary.chart);
+  renderCategoryGoals();
 }
 
 function renderSummary(summary) {
@@ -1100,6 +1208,9 @@ refreshSavedMonthsButton.addEventListener("click", loadSavedMonths);
 compareBaseMonth.addEventListener("change", renderComparison);
 compareTargetMonth.addEventListener("change", renderComparison);
 categoryForm.addEventListener("submit", saveCategory);
+categoryGoalInput.addEventListener("input", (event) => {
+  event.target.value = sanitizeMoneyText(event.target.value);
+});
 categoryCancelButton.addEventListener("click", () => {
   resetCategoryForm();
   categoryStatus.textContent = `${categories.length} categoria(s) cadastrada(s).`;

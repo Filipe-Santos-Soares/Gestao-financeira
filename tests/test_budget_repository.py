@@ -106,24 +106,34 @@ class SQLiteBudgetRepositoryTest(unittest.TestCase):
     def test_create_and_list_categories(self):
         user = self.repository.create_user("Usuario teste", "hash-simulado")
 
-        category = self.repository.create_category(user.id, "Moradia", "fixed")
+        category = self.repository.create_category(user.id, "Moradia", "fixed", Decimal("1200.00"))
 
         categories = self.repository.list_categories(user.id)
 
         self.assertIsNotNone(category.id)
         self.assertEqual(category.name, "Moradia")
         self.assertEqual(category.type, "fixed")
+        self.assertEqual(category.goal_amount, Decimal("1200.00"))
         self.assertEqual(len(categories), 1)
         self.assertEqual(categories[0].name, "Moradia")
+        self.assertEqual(categories[0].goal_amount, Decimal("1200.00"))
 
     def test_update_category(self):
         user = self.repository.create_user("Usuario teste", "hash-simulado")
         category = self.repository.create_category(user.id, "Casa", "fixed")
 
-        updated_category = self.repository.update_category(category.id, "Moradia", "both")
+        updated_category = self.repository.update_category(category.id, "Moradia", "both", Decimal("900.50"))
 
         self.assertEqual(updated_category.name, "Moradia")
         self.assertEqual(updated_category.type, "both")
+        self.assertEqual(updated_category.goal_amount, Decimal("900.50"))
+
+    def test_category_goal_is_optional(self):
+        user = self.repository.create_user("Usuario teste", "hash-simulado")
+
+        category = self.repository.create_category(user.id, "Sem meta", "variable")
+
+        self.assertIsNone(category.goal_amount)
 
     def test_delete_category(self):
         user = self.repository.create_user("Usuario teste", "hash-simulado")
