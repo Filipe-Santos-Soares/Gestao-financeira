@@ -57,6 +57,11 @@ button:disabled {
   color: var(--primary-dark);
 }
 
+.secondary-button.has-unsaved-changes {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .primary-button {
   min-height: 42px;
   border: 1px solid var(--primary-dark);
@@ -74,7 +79,8 @@ button:disabled {
 
 .secondary-link,
 .text-link,
-.user-chip {
+.user-chip,
+.save-state {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
@@ -103,6 +109,18 @@ button:disabled {
   border: 1px solid #000000;
   border-radius: 8px;
   background: var(--surface-alt);
+}
+
+.save-state {
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: #fff7ed;
+  color: var(--accent);
+}
+
+.save-state[hidden] {
+  display: none;
 }
 
 .period-controls {
@@ -261,7 +279,7 @@ button:disabled {
 }
 
 .insights-grid {
-  grid-template-columns: minmax(300px, 0.8fr) minmax(300px, 0.8fr) minmax(420px, 1.2fr);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
 .panel {
@@ -452,6 +470,34 @@ td input {
 .saved-month-button.is-negative .saved-month-balance {
   color: var(--danger);
   font-weight: 700;
+}
+
+.saved-month-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.saved-month-action {
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.saved-month-action:hover,
+.saved-month-action:focus-visible {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.saved-month-action.is-danger:hover,
+.saved-month-action.is-danger:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .category-manager {
@@ -803,13 +849,21 @@ td input.is-invalid {
 
 .evolution-chart-wrap {
   position: relative;
-  min-height: 300px;
-  padding: 24px;
+  min-height: 330px;
+  padding: 24px 24px 58px;
 }
 
 .evolution-chart-wrap canvas {
   width: 100% !important;
   height: 260px !important;
+}
+
+.evolution-chart-wrap .empty-state {
+  left: 50%;
+  bottom: 24px;
+  width: min(340px, calc(100% - 48px));
+  max-width: none;
+  transform: translateX(-50%);
 }
 
 .comparison-content {

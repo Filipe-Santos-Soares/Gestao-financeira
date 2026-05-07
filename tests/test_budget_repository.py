@@ -87,6 +87,15 @@ class SQLiteBudgetRepositoryTest(unittest.TestCase):
 
         self.assertEqual([(budget.month, budget.year) for budget in budgets], [(6, 2026), (5, 2026), (12, 2025)])
 
+    def test_delete_month_budget_removes_saved_budget(self):
+        user = self.repository.create_user("Usuario teste", "hash-simulado")
+        self.repository.create_month_budget(user.id, 5, 2026, Decimal("3500.00"))
+
+        deleted = self.repository.delete_month_budget(user.id, 5, 2026)
+
+        self.assertTrue(deleted)
+        self.assertIsNone(self.repository.get_month_budget(user.id, 5, 2026))
+
     def test_delete_expense(self):
         user = self.repository.create_user("Usuario teste", "hash-simulado")
         budget = self.repository.create_month_budget(user.id, 5, 2026, Decimal("3500.00"))

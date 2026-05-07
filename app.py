@@ -1,6 +1,8 @@
+import csv
 from datetime import datetime
+from io import StringIO
 
-from flask import jsonify, Flask, render_template, request, session
+from flask import jsonify, Flask, render_template, request, Response, session
 
 from auth_routes import auth_bp
 from auth_service import hash_password
@@ -377,6 +379,56 @@ def load_month_budget():
         repository.close()
 
 
+@app.get("/api/month-budget/export")
+def export_month_budget():
+    month, year, period_error = parse_current_period()
+
+    if period_error:
+        return jsonify({"exported": False, "message": period_error}), 400
+
+    repository = get_repository()
+
+    try:
+        user = get_active_user(repository)
+        if not user:
+            return no_active_user_response()
+
+        budget = repository.get_month_budget(user.id, month, year)
+
+        if not budget:
+            return jsonify({"exported": False, "message": "Nenhum orçamento salvo para este mês."}), 404
+
+        fixed_expenses = repository.list_expenses(budget.id, "fixed")
+        variable_expenses = repository.list_expenses(budget.id, "variable")
+        output = StringIO()
+        writer = csv.writer(output, delimiter=";")
+        writer.writerow(["mes", "ano", "salario", "tipo", "descricao", "categoria", "valor"])
+
+        for expense_type, expenses in (("fixo", fixed_expenses), ("variado", variable_expenses)):
+            for expense in expenses:
+                writer.writerow(
+                    [
+                        budget.month,
+                        budget.year,
+                        f"{float(budget.salary):.2f}",
+                        expense_type,
+                        expense.description,
+                        expense.category,
+                        f"{float(expense.amount):.2f}",
+                    ]
+                )
+
+        filename = f"orcamento-{year}-{month:02d}.csv"
+
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+    finally:
+        repository.close()
+
+
 @app.post("/api/month-budget")
 def save_month_budget():
     payload = request.get_json(silent=True) or {}
@@ -406,6 +458,31 @@ def save_month_budget():
         data["saved"] = True
 
         return jsonify(data)
+    finally:
+        repository.close()
+
+
+@app.post("/api/month-budget/delete")
+def delete_month_budget():
+    payload = request.get_json(silent=True) or {}
+    month, year, period_error = parse_current_period(payload)
+
+    if period_error:
+        return jsonify({"deleted": False, "message": period_error}), 400
+
+    repository = get_repository()
+
+    try:
+        user = get_active_user(repository)
+        if not user:
+            return no_active_user_response()
+
+        deleted = repository.delete_month_budget(user.id, month, year)
+
+        if not deleted:
+            return jsonify({"deleted": False, "message": "Nenhum orçamento salvo para este mês."}), 404
+
+        return jsonify({"deleted": True, "month": month, "year": year})
     finally:
         repository.close()
 

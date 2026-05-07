@@ -48,8 +48,10 @@ class AppTest(unittest.TestCase):
         self.assertIn(b"Entre meses", response.data)
         self.assertIn("Histórico mensal".encode(), response.data)
         self.assertIn(b"Gerenciar", response.data)
+        self.assertIn(b'id="saveStateIndicator"', response.data)
         self.assertIn(b'id="categoryGoalInput"', response.data)
         self.assertIn(b'id="categoryGoalsList"', response.data)
+        self.assertIn(b"Valores e metas por categoria", response.data)
         self.assertIn(b'id="fixedCategoryOptions"', response.data)
         self.assertIn(b'id="variableCategoryOptions"', response.data)
         self.assertIn(b'autocomplete="off"', response.data)
@@ -272,6 +274,59 @@ class AppTest(unittest.TestCase):
 
             self.assertEqual(response.status_code, 200)
             self.assertFalse(data["found"])
+
+    def test_export_month_budget_csv(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={
+                        "month": 5,
+                        "year": 2026,
+                        "salary": "3500,00",
+                        "fixed_expenses": [
+                            {"description": "Aluguel", "category": "Moradia", "amount": "1200,00"}
+                        ],
+                        "variable_expenses": [
+                            {"description": "Mercado", "category": "Alimentacao", "amount": "450,00"}
+                        ],
+                    },
+                )
+                response = self.client.get("/api/month-budget/export?month=5&year=2026")
+
+            csv_text = response.get_data(as_text=True)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("text/csv", response.content_type)
+            self.assertIn("orcamento-2026-05.csv", response.headers["Content-Disposition"])
+            self.assertIn("mes;ano;salario;tipo;descricao;categoria;valor", csv_text)
+            self.assertIn("5;2026;3500.00;fixo;Aluguel;Moradia;1200.00", csv_text)
+
+    def test_delete_month_budget_endpoint(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={"month": 5, "year": 2026, "salary": "3500,00"},
+                )
+                delete_response = self.client.post(
+                    "/api/month-budget/delete",
+                    headers=headers,
+                    json={"month": 5, "year": 2026},
+                )
+                load_response = self.client.get("/api/month-budget?month=5&year=2026")
+
+            self.assertEqual(delete_response.status_code, 200)
+            self.assertTrue(delete_response.get_json()["deleted"])
+            self.assertFalse(load_response.get_json()["found"])
 
     def test_list_month_budgets_returns_saved_months_with_summary(self):
         with tempfile.TemporaryDirectory() as temp_dir:

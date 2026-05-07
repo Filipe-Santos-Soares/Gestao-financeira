@@ -273,6 +273,18 @@ class SQLiteBudgetRepository:
 
         return self.get_month_budget_by_id(month_budget_id)
 
+    def delete_month_budget(self, user_id, month, year):
+        cursor = self.execute(
+            """
+            DELETE FROM month_budgets
+            WHERE user_id = ? AND month = ? AND year = ?
+            """,
+            (user_id, month, year),
+        )
+        self.connection.commit()
+
+        return cursor.rowcount > 0
+
     def add_expense(self, month_budget_id, expense_type, description, amount, category=""):
         expense_id = self.insert_and_get_id(
             """

@@ -51,6 +51,7 @@
           <input id="periodYear" name="year" type="number" min="1900" max="9999" step="1" inputmode="numeric">
         </div>
         <button class="secondary-button" id="saveBudgetButton" type="button">Salvar</button>
+        <span class="save-state" id="saveStateIndicator" hidden>Alterações não salvas</span>
         <button class="secondary-button" id="duplicatePreviousButton" type="button">Duplicar anterior</button>
         <button class="secondary-button" id="clearDataButton" type="button">Limpar dados</button>
         <p class="month-label" id="currentMonth"></p>
@@ -278,14 +279,14 @@
         <section class="panel category-goals-panel" aria-labelledby="categoryGoalsTitle">
           <header class="panel-header">
             <div>
-              <p class="eyebrow">Metas</p>
+              <p class="eyebrow">Categorias</p>
               <h2 id="categoryGoalsTitle">Por categoria</h2>
             </div>
           </header>
 
           <div class="category-goals-content">
-            <p class="field-hint" id="categoryGoalsEmpty">Cadastre uma meta em uma categoria para acompanhar o limite mensal.</p>
-            <ul class="category-goals-list" id="categoryGoalsList" aria-label="Metas por categoria"></ul>
+            <p class="field-hint" id="categoryGoalsEmpty">Informe categorias nos gastos para acompanhar valores e metas.</p>
+            <ul class="category-goals-list" id="categoryGoalsList" aria-label="Valores e metas por categoria"></ul>
           </div>
         </section>
 
@@ -299,7 +300,7 @@
 
           <div class="evolution-chart-wrap">
             <canvas id="evolutionChart" aria-label="Gráfico de evolução mensal de gastos e saldo" role="img"></canvas>
-            <p class="empty-state" id="evolutionEmpty">Salve pelo menos dois meses para visualizar a evolução.</p>
+            <p class="empty-state" id="evolutionEmpty">Salve pelo menos dois meses no ano selecionado para visualizar a evolução.</p>
           </div>
         </section>
       </section>

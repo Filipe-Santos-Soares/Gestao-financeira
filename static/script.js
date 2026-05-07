@@ -14,6 +14,7 @@ const statusMessage = document.querySelector("#statusMessage");
 const balanceRow = document.querySelector("#balanceRow");
 const clearDataButton = document.querySelector("#clearDataButton");
 const saveBudgetButton = document.querySelector("#saveBudgetButton");
+const saveStateIndicator = document.querySelector("#saveStateIndicator");
 const duplicatePreviousButton = document.querySelector("#duplicatePreviousButton");
 const periodMonthInput = document.querySelector("#periodMonth");
 const periodYearInput = document.querySelector("#periodYear");
@@ -68,6 +69,7 @@ let periodChangeTimer = null;
 let savedMonthBudgets = [];
 let categories = [];
 let editingCategoryId = null;
+let hasUnsavedChanges = false;
 
 const chartColors = ["#147d64", "#d97706", "#3b82f6"];
 const categoryTypeLabels = {
@@ -131,6 +133,7 @@ function setSelectedPeriod(month, year) {
   periodMonthInput.value = String(month);
   periodYearInput.value = String(year);
   updatePeriodLabel();
+  renderEvolutionChart();
 }
 
 function getPreviousPeriod(period) {
@@ -166,6 +169,16 @@ function showFeedbackPopup(message) {
 function hideFeedbackPopup() {
   feedbackPopup.hidden = true;
   feedbackPopupMessage.textContent = "";
+}
+
+function setUnsavedChanges(isDirty) {
+  if (isRestoringState) {
+    return;
+  }
+
+  hasUnsavedChanges = isDirty;
+  saveStateIndicator.hidden = !isDirty;
+  saveBudgetButton.classList.toggle("has-unsaved-changes", isDirty);
 }
 
 function jsonHeaders(includeCsrf = false) {
@@ -249,7 +262,13 @@ function renderComparison() {
 }
 
 function renderEvolutionChart() {
-  const hasEvolutionData = savedMonthBudgets.length >= 2;
+  const selectedYear = getSelectedPeriod().year;
+  const chartBudgets = savedMonthBudgets
+    .filter((budget) => Number(budget.year) === selectedYear)
+    .sort((a, b) => Number(a.month) - Number(b.month));
+  const hasEvolutionData = chartBudgets.length >= 2;
+
+  evolutionEmpty.textContent = `Salve pelo menos dois meses de ${selectedYear} para visualizar a evolução.`;
   evolutionEmpty.classList.toggle("is-hidden", hasEvolutionData);
 
   if (!window.Chart || !hasEvolutionData) {
@@ -260,7 +279,6 @@ function renderEvolutionChart() {
     return;
   }
 
-  const chartBudgets = [...savedMonthBudgets].reverse();
   const labels = chartBudgets.map((budget) => formatPeriod(budget.month, budget.year));
   const expenseValues = chartBudgets.map((budget) => budget.total_expenses);
   const balanceValues = chartBudgets.map((budget) => budget.remaining_balance);
@@ -353,6 +371,9 @@ function renderSavedMonths(monthBudgets) {
     const salary = document.createElement("span");
     const total = document.createElement("span");
     const balance = document.createElement("span");
+    const actions = document.createElement("span");
+    const exportButton = document.createElement("button");
+    const deleteButton = document.createElement("button");
 
     button.type = "button";
     button.className = "saved-month-button";
@@ -371,7 +392,28 @@ function renderSavedMonths(monthBudgets) {
     balance.className = "saved-month-balance";
     balance.textContent = `Saldo: ${currencyFormatter.format(budget.remaining_balance)}`;
 
+    actions.className = "saved-month-actions";
+
+    exportButton.type = "button";
+    exportButton.className = "saved-month-action";
+    exportButton.textContent = "CSV";
+    exportButton.setAttribute("aria-label", `Exportar orçamento de ${formatPeriod(budget.month, budget.year)} em CSV`);
+    exportButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      exportSavedMonth(budget);
+    });
+
+    deleteButton.type = "button";
+    deleteButton.className = "saved-month-action is-danger";
+    deleteButton.textContent = "Excluir";
+    deleteButton.setAttribute("aria-label", `Excluir orçamento de ${formatPeriod(budget.month, budget.year)}`);
+    deleteButton.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await deleteSavedMonth(budget);
+    });
+
     periodRow.append(period, salary);
+    actions.append(exportButton, deleteButton);
     button.append(periodRow, total, balance);
     button.addEventListener("click", async () => {
       hideFeedbackPopup();
@@ -381,7 +423,7 @@ function renderSavedMonths(monthBudgets) {
       await loadBudgetFromDatabase();
     });
 
-    item.appendChild(button);
+    item.append(button, actions);
     savedMonthsList.appendChild(item);
   });
 
@@ -420,6 +462,57 @@ async function loadSavedMonths() {
   } finally {
     refreshSavedMonthsButton.disabled = false;
     refreshSavedMonthsButton.textContent = originalButtonText;
+  }
+}
+
+function exportSavedMonth(budget) {
+  const params = new URLSearchParams({
+    month: budget.month,
+    year: budget.year,
+  });
+
+  window.location.href = `/api/month-budget/export?${params.toString()}`;
+}
+
+async function deleteSavedMonth(budget) {
+  const shouldDelete = window.confirm(`Excluir o orçamento salvo de ${formatPeriod(budget.month, budget.year)}?`);
+
+  if (!shouldDelete) {
+    return;
+  }
+
+  hideFeedbackPopup();
+
+  try {
+    const response = await fetch("/api/month-budget/delete", {
+      method: "POST",
+      headers: jsonHeaders(true),
+      body: JSON.stringify({
+        month: budget.month,
+        year: budget.year,
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      showFeedbackPopup(data.message || "Não foi possível excluir o mês salvo.");
+      return;
+    }
+
+    const selectedPeriod = getSelectedPeriod();
+
+    if (selectedPeriod.month === budget.month && selectedPeriod.year === budget.year) {
+      clearBudgetForm();
+      saveState();
+      await refreshSummary();
+      setUnsavedChanges(false);
+    }
+
+    statusMessage.classList.remove("is-negative");
+    statusMessage.textContent = `Orçamento de ${formatPeriod(data.month, data.year)} excluído.`;
+    await loadSavedMonths();
+  } catch {
+    showFeedbackPopup("Não foi possível excluir o mês salvo.");
   }
 }
 
@@ -593,22 +686,72 @@ function getCategorySpent(category, spendingItems) {
 }
 
 function renderCategoryGoals() {
-  const categoriesWithGoals = categories.filter((category) => Number(category.goal_amount) > 0);
+  const spendingItems = collectCategorySpending();
+  const categoriesByName = new Map(categories.map((category) => [normalizeCategoryName(category.name), category]));
+  const visibleCategories = new Map();
+
+  categories.forEach((category) => {
+    if (Number(category.goal_amount) > 0) {
+      visibleCategories.set(normalizeCategoryName(category.name), {
+        category,
+        spentAmount: getCategorySpent(category, spendingItems),
+      });
+    }
+  });
+
+  spendingItems.forEach((item) => {
+    const key = normalizeCategoryName(item.category);
+
+    if (!key || item.amount <= 0) {
+      return;
+    }
+
+    const visibleCategory = visibleCategories.get(key);
+
+    if (visibleCategory && Number(visibleCategory.category.goal_amount) > 0) {
+      return;
+    }
+
+    const category =
+      categoriesByName.get(key) || {
+        name: item.category.trim(),
+        type: "both",
+        goal_amount: "",
+      };
+
+    const current =
+      visibleCategories.get(key) || {
+        category,
+        spentAmount: 0,
+      };
+
+    current.spentAmount += categoryAppliesToExpenseType(category, item.type) ? item.amount : 0;
+    visibleCategories.set(key, current);
+  });
+
+  const categoryRows = [...visibleCategories.values()]
+    .filter((row) => Number(row.category.goal_amount) > 0 || row.spentAmount > 0)
+    .sort((a, b) => {
+      if (b.spentAmount !== a.spentAmount) {
+        return b.spentAmount - a.spentAmount;
+      }
+
+      return a.category.name.localeCompare(b.category.name, "pt-BR");
+    });
+
   categoryGoalsList.innerHTML = "";
 
-  if (!categoriesWithGoals.length) {
+  if (!categoryRows.length) {
     categoryGoalsEmpty.hidden = false;
     return;
   }
 
   categoryGoalsEmpty.hidden = true;
 
-  const spendingItems = collectCategorySpending();
-
-  categoriesWithGoals.forEach((category) => {
+  categoryRows.forEach(({ category, spentAmount }) => {
     const goalAmount = Number(category.goal_amount);
-    const spentAmount = getCategorySpent(category, spendingItems);
     const percentage = goalAmount > 0 ? (spentAmount / goalAmount) * 100 : 0;
+    const hasGoal = goalAmount > 0;
     const item = document.createElement("li");
     const header = document.createElement("div");
     const name = document.createElement("strong");
@@ -619,8 +762,9 @@ function renderCategoryGoals() {
     const status = document.createElement("p");
 
     item.className = "category-goal-item";
-    item.classList.toggle("is-warning", percentage >= 80 && percentage < 100);
-    item.classList.toggle("is-over", percentage >= 100);
+    item.classList.toggle("has-goal", hasGoal);
+    item.classList.toggle("is-warning", hasGoal && percentage >= 70 && percentage < 100);
+    item.classList.toggle("is-over", hasGoal && percentage >= 100);
     header.className = "category-goal-header";
     type.className = "category-goal-type";
     values.className = "category-goal-values";
@@ -629,16 +773,28 @@ function renderCategoryGoals() {
 
     name.textContent = category.name;
     type.textContent = categoryTypeLabels[category.type] || category.type;
-    values.textContent = `${currencyFormatter.format(spentAmount)} de ${currencyFormatter.format(goalAmount)}`;
-    progressBar.style.width = `${Math.min(percentage, 100)}%`;
-    status.textContent =
-      percentage >= 100
-        ? `Meta ultrapassada em ${currencyFormatter.format(spentAmount - goalAmount)}.`
-        : `${percentFormatter.format(percentage)}% da meta usada.`;
+    values.textContent = hasGoal
+      ? `${currencyFormatter.format(spentAmount)} de ${currencyFormatter.format(goalAmount)}`
+      : `Gasto no mês: ${currencyFormatter.format(spentAmount)}`;
 
     header.append(name, type);
-    progress.appendChild(progressBar);
-    item.append(header, values, progress, status);
+
+    if (hasGoal) {
+      progressBar.style.width = `${Math.min(percentage, 100)}%`;
+      status.textContent =
+        percentage >= 100
+          ? `Meta ultrapassada em ${currencyFormatter.format(spentAmount - goalAmount)}.`
+          : percentage >= 70
+            ? `Atenção: ${percentFormatter.format(percentage)}% da meta usada.`
+            : `${percentFormatter.format(percentage)}% da meta usada.`;
+
+      progress.appendChild(progressBar);
+      item.append(header, values, progress, status);
+    } else {
+      status.textContent = "Sem meta definida.";
+      item.append(header, values, status);
+    }
+
     categoryGoalsList.appendChild(item);
   });
 }
@@ -704,6 +860,7 @@ function createExpenseRow(expense = {}, expenseType = "fixed") {
     ensureOneRow(fixedBody);
     ensureOneRow(variableBody);
     saveState();
+    setUnsavedChanges(true);
     refreshSummary();
   });
 
@@ -848,6 +1005,7 @@ function resetState() {
   variableBody.innerHTML = "";
   addExpenseRow(fixedBody);
   addExpenseRow(variableBody);
+  setUnsavedChanges(true);
   refreshSummary();
 }
 
@@ -896,6 +1054,7 @@ async function saveBudgetToDatabase() {
     statusMessage.textContent = `Dados salvos no banco para ${formatPeriod(data.month, data.year)}.`;
     hideFeedbackPopup();
     await loadSavedMonths();
+    setUnsavedChanges(false);
   } catch {
     statusMessage.textContent = "Não foi possível salvar no banco de dados.";
     statusMessage.classList.add("is-negative");
@@ -932,6 +1091,7 @@ async function loadBudgetFromDatabase(options = {}) {
         clearBudgetForm();
         saveState();
         await refreshSummary();
+        setUnsavedChanges(false);
         statusMessage.classList.remove("is-negative");
         statusMessage.textContent = `Nenhum dado salvo para ${formatPeriod(data.month, data.year)}. Tela pronta para um novo orçamento.`;
         hideFeedbackPopup();
@@ -954,6 +1114,7 @@ async function loadBudgetFromDatabase(options = {}) {
 
     saveState();
     await refreshSummary();
+    setUnsavedChanges(false);
     statusMessage.classList.remove("is-negative");
     statusMessage.textContent = `Dados carregados do banco para ${formatPeriod(data.month, data.year)}.`;
     hideFeedbackPopup();
@@ -1017,6 +1178,7 @@ async function duplicatePreviousMonth() {
     setSelectedPeriod(targetPeriod.month, targetPeriod.year);
     saveState();
     await refreshSummary();
+    setUnsavedChanges(true);
     updateSavedMonthsActive();
     statusMessage.classList.remove("is-negative");
     statusMessage.textContent = `Dados copiados de ${formatPeriod(sourcePeriod.month, sourcePeriod.year)} para ${formatPeriod(targetPeriod.month, targetPeriod.year)}. Revise e clique em Salvar.`;
@@ -1063,6 +1225,7 @@ function validateRows() {
 function scheduleRefresh() {
   window.clearTimeout(refreshTimer);
   saveState();
+  setUnsavedChanges(true);
   refreshTimer = window.setTimeout(refreshSummary, 120);
 }
 
@@ -1195,6 +1358,7 @@ document.querySelectorAll(".add-row").forEach((button) => {
     const targetBody = document.querySelector(`#${button.dataset.target}`);
     addExpenseRow(targetBody);
     saveState();
+    setUnsavedChanges(true);
     refreshSummary();
   });
 });
@@ -1219,6 +1383,7 @@ periodMonthInput.addEventListener("change", () => {
   hideFeedbackPopup();
   updatePeriodLabel();
   updateSavedMonthsActive();
+  renderEvolutionChart();
   saveState();
   scheduleLoadSelectedPeriod();
 });
@@ -1226,8 +1391,17 @@ periodYearInput.addEventListener("input", () => {
   hideFeedbackPopup();
   updatePeriodLabel();
   updateSavedMonthsActive();
+  renderEvolutionChart();
   saveState();
   scheduleLoadSelectedPeriod();
+});
+window.addEventListener("beforeunload", (event) => {
+  if (!hasUnsavedChanges) {
+    return;
+  }
+
+  event.preventDefault();
+  event.returnValue = "";
 });
 
 restoreState();

@@ -492,6 +492,18 @@ Status atual:
 - As APIs de orcamento mensal validam mes e ano antes de acessar o banco.
 - Metas mensais opcionais por categoria foram adicionadas ao cadastro de categorias.
 - O painel passa a acompanhar o gasto atual em relacao a meta de cada categoria.
+- O painel passa a exibir resumo mensal de gastos por categoria.
+- A interface sinaliza quando existem alteracoes ainda nao salvas no banco.
+- Meses salvos podem ser exportados em CSV e excluidos pelo usuario.
+
+Pendencias de refinamento pos-deploy:
+
+- Reavaliar o bloco separado de "Resumo do mes" por categoria, pois pode ser redundante.
+- Preferencia atual: consolidar os valores de cada categoria dentro do bloco "Metas por categoria".
+- Categorias sem meta definida devem continuar aparecendo nesse bloco, exibindo apenas o valor gasto, sem limite ou barra de meta.
+- Ajustar a evolucao do historico mensal para exibir no maximo os 12 meses de um ano selecionado, mostrando apenas meses preenchidos.
+- Quando houver dados de mais de um ano, evitar misturar todos os meses no mesmo grafico para nao gerar excesso de informacao visual.
+- A ideia de uma pagina/area de configuracoes continua como planejamento futuro e deve ser desenhada com cuidado antes de implementar.
 
 ### Versao 8 - Responsividade mobile avancada
 
@@ -507,6 +519,13 @@ Status atual:
 - Proteger dados sensiveis em ambiente online.
 - Avaliar criptografia, logs seguros e politicas de retencao de dados.
 - Documentar cuidados de seguranca antes de operar com usuarios reais.
+
+### Versao 10 - Configuracoes do aplicativo
+
+- Avaliar a criacao de uma pagina ou area dedicada de configuracoes.
+- Possiveis itens: conta, login/sessao, categorias, metas, preferencias da interface e opcoes de exportacao.
+- A decisao de layout e escopo deve ser feita antes da implementacao para evitar sobrecarregar o painel principal.
+- Esta versao deve ser tratada como planejamento futuro; nao faz parte das melhorias imediatas.
 
 ## 14. Criterios Gerais de Sucesso
 
