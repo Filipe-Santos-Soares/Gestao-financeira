@@ -36,10 +36,15 @@
 - Adicionada proteção CSRF em ações mutáveis e configuração mais restrita para cookies de sessão.
 - Adicionadas metas mensais opcionais por categoria.
 - Adicionado painel de acompanhamento de gasto atual contra meta por categoria.
-- Adicionado resumo mensal de gastos por categoria.
+- Consolidado o resumo mensal de gastos dentro do painel de metas por categoria.
+- Ajustado o gráfico de evolução para mostrar apenas meses preenchidos do ano selecionado.
 - Adicionado indicador de alterações não salvas no painel.
 - Adicionadas ações para exportar orçamento mensal em CSV e excluir mês salvo.
 - Refinados os alertas visuais de metas a partir de 70% de uso.
+- Adicionado rate limit para tentativas inválidas de login e cadastro.
+- Adicionada expiração de sessão por inatividade.
+- Adicionados headers de segurança HTTP.
+- Adicionados testes para garantir isolamento de orçamentos e categorias por usuário.
 
 ## 1.0 - Versao inicial
 

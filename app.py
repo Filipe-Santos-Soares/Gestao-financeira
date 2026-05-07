@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import StringIO
 
 from flask import jsonify, Flask, render_template, request, Response, session
@@ -15,11 +15,12 @@ from config import (
     LOCAL_USER_NAME,
     LOCAL_USER_PASSWORD,
     SECRET_KEY,
+    SESSION_IDLE_TIMEOUT_SECONDS,
     validate_runtime_config,
 )
 from finance_logic import calculate_summary
 from repositories import PostgreSQLBudgetRepository, SQLiteBudgetRepository
-from security import get_csrf_token, get_request_csrf_token, is_valid_csrf_token
+from security import get_csrf_token, get_request_csrf_token, is_valid_csrf_token, refresh_session_activity
 
 
 validate_runtime_config()
@@ -28,6 +29,7 @@ app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = IS_PRODUCTION
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(seconds=SESSION_IDLE_TIMEOUT_SECONDS)
 APP_VERSION = "1.1"
 app.register_blueprint(auth_bp)
 
@@ -96,6 +98,11 @@ def inject_csrf_token():
 
 
 @app.before_request
+def expire_idle_session():
+    refresh_session_activity(SESSION_IDLE_TIMEOUT_SECONDS)
+
+
+@app.before_request
 def protect_state_changing_requests():
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return None
@@ -110,6 +117,32 @@ def protect_state_changing_requests():
         return invalid_csrf_response()
 
     return render_template("error.html", title="Sessão expirada", message="Recarregue a página e tente novamente."), 400
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=()",
+    )
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "font-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'none'; "
+        "form-action 'self'",
+    )
+
+    return response
 
 
 def expense_to_dict(expense):

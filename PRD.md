@@ -492,17 +492,17 @@ Status atual:
 - As APIs de orcamento mensal validam mes e ano antes de acessar o banco.
 - Metas mensais opcionais por categoria foram adicionadas ao cadastro de categorias.
 - O painel passa a acompanhar o gasto atual em relacao a meta de cada categoria.
-- O painel passa a exibir resumo mensal de gastos por categoria.
+- O painel de categorias passa a consolidar gasto mensal e meta opcional por categoria.
 - A interface sinaliza quando existem alteracoes ainda nao salvas no banco.
 - Meses salvos podem ser exportados em CSV e excluidos pelo usuario.
+- O historico mensal passa a exibir apenas meses preenchidos do ano selecionado.
+- Tentativas invalidas de login e cadastro passam a ter bloqueio temporario por rate limit.
+- Sessoes passam a expirar por inatividade, com tempo configuravel por ambiente.
+- Headers de seguranca HTTP foram adicionados para reduzir riscos de clickjacking, content sniffing e carregamento indevido de recursos.
+- Testes automatizados passam a validar isolamento de orcamentos e categorias por usuario.
 
 Pendencias de refinamento pos-deploy:
 
-- Reavaliar o bloco separado de "Resumo do mes" por categoria, pois pode ser redundante.
-- Preferencia atual: consolidar os valores de cada categoria dentro do bloco "Metas por categoria".
-- Categorias sem meta definida devem continuar aparecendo nesse bloco, exibindo apenas o valor gasto, sem limite ou barra de meta.
-- Ajustar a evolucao do historico mensal para exibir no maximo os 12 meses de um ano selecionado, mostrando apenas meses preenchidos.
-- Quando houver dados de mais de um ano, evitar misturar todos os meses no mesmo grafico para nao gerar excesso de informacao visual.
 - A ideia de uma pagina/area de configuracoes continua como planejamento futuro e deve ser desenhada com cuidado antes de implementar.
 
 ### Versao 8 - Responsividade mobile avancada

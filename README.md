@@ -29,5 +29,8 @@ As principais variáveis estão documentadas em `.env.example`:
 - `DATABASE_URL`: ativa PostgreSQL quando usar URL `postgresql://`.
 - `CREATE_LOCAL_USER`: controla a criação automática do usuário local.
 - `LOCAL_USER_NAME` e `LOCAL_USER_PASSWORD`: credenciais do usuário local quando habilitado.
+- `SESSION_IDLE_TIMEOUT_SECONDS`: tempo de inatividade antes de expirar a sessão.
+- `AUTH_RATE_LIMIT_ATTEMPTS`: tentativas inválidas de login/cadastro antes do bloqueio temporário.
+- `AUTH_RATE_LIMIT_WINDOW_SECONDS`: janela de tempo usada no bloqueio temporário.
 
 Sem `DATABASE_URL`, o app usa SQLite em `database/app.db`.

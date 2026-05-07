@@ -20,6 +20,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", DEFAULT_SECRET_KEY)
 LOCAL_USER_NAME = os.environ.get("LOCAL_USER_NAME", "Usuário local")
 LOCAL_USER_PASSWORD = os.environ.get("LOCAL_USER_PASSWORD", "local")
 CREATE_LOCAL_USER = os.environ.get("CREATE_LOCAL_USER", "true").lower() in {"1", "true", "yes"}
+SESSION_IDLE_TIMEOUT_SECONDS = int(os.environ.get("SESSION_IDLE_TIMEOUT_SECONDS", "7200"))
+AUTH_RATE_LIMIT_ATTEMPTS = int(os.environ.get("AUTH_RATE_LIMIT_ATTEMPTS", "5"))
+AUTH_RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("AUTH_RATE_LIMIT_WINDOW_SECONDS", "900"))
 
 
 def validate_runtime_config():

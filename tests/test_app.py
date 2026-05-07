@@ -7,13 +7,16 @@ from unittest.mock import patch
 import auth_routes
 import app as app_module
 from app import app
+from auth_service import hash_password
 from init_db import initialize_database
+from repositories import SQLiteBudgetRepository
 
 
 class AppTest(unittest.TestCase):
     def setUp(self):
         app.config.update(TESTING=True)
         self.client = app.test_client()
+        auth_routes.auth_rate_limiter.clear()
 
     def get_csrf_token(self):
         response = self.client.get("/")
@@ -26,10 +29,28 @@ class AppTest(unittest.TestCase):
     def csrf_headers(self):
         return {"X-CSRF-Token": self.get_csrf_token()}
 
+    def create_test_user(self, database_path, name):
+        repository = SQLiteBudgetRepository(database_path)
+        try:
+            repository.init_schema()
+            return repository.create_user(name, hash_password("senha-segura"))
+        finally:
+            repository.close()
+
+    def set_session_user(self, user):
+        with self.client.session_transaction() as session:
+            session["user_id"] = user.id
+            session["user_name"] = user.name
+
     def test_index_loads(self):
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(response.headers["Referrer-Policy"], "same-origin")
+        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+        self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
+        self.assertIn("https://cdn.jsdelivr.net", response.headers["Content-Security-Policy"])
         self.assertIn("Gestão Financeira".encode(), response.data)
         self.assertIn(b"financeChart", response.data)
         self.assertIn(b'<meta name="app-version" content="1.1">', response.data)
@@ -102,6 +123,38 @@ class AppTest(unittest.TestCase):
 
             self.assertEqual(response.status_code, 401)
             self.assertIn("Usuário ou senha inválidos.".encode(), response.data)
+
+    def test_login_rate_limit_blocks_repeated_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+            initialize_database(database_path)
+            csrf_token = self.get_csrf_token()
+
+            with patch.object(auth_routes, "DATABASE_PATH", database_path):
+                responses = [
+                    self.client.post(
+                        "/login",
+                        data={"name": "Usuário local", "password": "senha-errada", "csrf_token": csrf_token},
+                    )
+                    for _ in range(6)
+                ]
+
+            self.assertEqual([response.status_code for response in responses[:5]], [401, 401, 401, 401, 401])
+            self.assertEqual(responses[5].status_code, 429)
+            self.assertIn("Muitas tentativas".encode(), responses[5].data)
+
+    def test_idle_session_expires_user(self):
+        with self.client.session_transaction() as session:
+            session["user_id"] = 1
+            session["user_name"] = "Usuário local"
+            session["_last_seen_at"] = 1
+
+        with patch.object(app_module, "SESSION_IDLE_TIMEOUT_SECONDS", 1):
+            response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Login", response.data)
+        self.assertNotIn(b"Sair", response.data)
 
     def test_register_creates_user_and_logs_in(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -181,6 +234,29 @@ class AppTest(unittest.TestCase):
 
             self.assertEqual(response.status_code, 400)
             self.assertIn(b"A senha deve ter pelo menos 8 caracteres.", response.data)
+
+    def test_register_rate_limit_blocks_repeated_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+            csrf_token = self.get_csrf_token()
+
+            with patch.object(auth_routes, "DATABASE_PATH", database_path):
+                responses = [
+                    self.client.post(
+                        "/register",
+                        data={
+                            "name": "Nova conta",
+                            "password": "curta",
+                            "password_confirmation": "curta",
+                            "csrf_token": csrf_token,
+                        },
+                    )
+                    for _ in range(6)
+                ]
+
+            self.assertEqual([response.status_code for response in responses[:5]], [400, 400, 400, 400, 400])
+            self.assertEqual(responses[5].status_code, 429)
+            self.assertIn("Muitas tentativas".encode(), responses[5].data)
 
     def test_logout_keeps_index_available(self):
         csrf_token = self.get_csrf_token()
@@ -327,6 +403,50 @@ class AppTest(unittest.TestCase):
             self.assertEqual(delete_response.status_code, 200)
             self.assertTrue(delete_response.get_json()["deleted"])
             self.assertFalse(load_response.get_json()["found"])
+
+    def test_month_budget_data_is_isolated_by_user(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+            user_a = self.create_test_user(database_path, "Usuario A")
+            user_b = self.create_test_user(database_path, "Usuario B")
+            headers = self.csrf_headers()
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                self.set_session_user(user_a)
+                save_response = self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={
+                        "month": 5,
+                        "year": 2026,
+                        "salary": "3500,00",
+                        "fixed_expenses": [
+                            {"description": "Aluguel", "category": "Moradia", "amount": "1200,00"}
+                        ],
+                    },
+                )
+
+                self.set_session_user(user_b)
+                load_response = self.client.get("/api/month-budget?month=5&year=2026")
+                list_response = self.client.get("/api/month-budgets")
+                export_response = self.client.get("/api/month-budget/export?month=5&year=2026")
+                delete_response = self.client.post(
+                    "/api/month-budget/delete",
+                    headers=headers,
+                    json={"month": 5, "year": 2026},
+                )
+
+                self.set_session_user(user_a)
+                owner_load_response = self.client.get("/api/month-budget?month=5&year=2026")
+
+            self.assertEqual(save_response.status_code, 200)
+            self.assertTrue(save_response.get_json()["saved"])
+            self.assertEqual(load_response.status_code, 200)
+            self.assertFalse(load_response.get_json()["found"])
+            self.assertEqual(list_response.get_json()["month_budgets"], [])
+            self.assertEqual(export_response.status_code, 404)
+            self.assertEqual(delete_response.status_code, 404)
+            self.assertTrue(owner_load_response.get_json()["found"])
 
     def test_list_month_budgets_returns_saved_months_with_summary(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -477,6 +597,43 @@ class AppTest(unittest.TestCase):
             self.assertEqual(update_response.status_code, 200)
             self.assertEqual(update_response.get_json()["category"]["type"], "variable")
             self.assertEqual(delete_response.status_code, 200)
+
+    def test_categories_are_isolated_by_user(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+            user_a = self.create_test_user(database_path, "Usuario A")
+            user_b = self.create_test_user(database_path, "Usuario B")
+            headers = self.csrf_headers()
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                self.set_session_user(user_a)
+                create_response = self.client.post(
+                    "/api/categories",
+                    headers=headers,
+                    json={"name": "Moradia", "type": "fixed", "goal_amount": "1200,00"},
+                )
+                category_id = create_response.get_json()["category"]["id"]
+
+                self.set_session_user(user_b)
+                list_response = self.client.get("/api/categories")
+                update_response = self.client.post(
+                    f"/api/categories/{category_id}/update",
+                    headers=headers,
+                    json={"name": "Lazer", "type": "variable"},
+                )
+                delete_response = self.client.post(
+                    f"/api/categories/{category_id}/delete",
+                    headers=headers,
+                )
+
+                self.set_session_user(user_a)
+                owner_list_response = self.client.get("/api/categories")
+
+            self.assertEqual(create_response.status_code, 200)
+            self.assertEqual(list_response.get_json()["categories"], [])
+            self.assertEqual(update_response.status_code, 404)
+            self.assertEqual(delete_response.status_code, 404)
+            self.assertEqual(len(owner_list_response.get_json()["categories"]), 1)
 
     def test_api_rejects_mutation_without_csrf_token(self):
         response = self.client.post("/api/categories", json={"name": "Moradia", "type": "fixed"})
