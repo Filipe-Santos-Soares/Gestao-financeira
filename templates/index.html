@@ -31,7 +31,7 @@
         {% else %}
           <a class="secondary-link" href="{{ url_for('auth.login_form') }}">Login</a>
         {% endif %}
-        <div class="period-controls" aria-label="Período do orçamento">
+        <div class="period-controls" role="group" aria-label="Período do orçamento">
           <label for="periodMonth">Mês</label>
           <select id="periodMonth" name="month">
             <option value="1">Janeiro</option>
@@ -90,7 +90,10 @@
                 <p class="eyebrow">Histórico</p>
                 <h3 id="savedMonthsTitle">Meses salvos</h3>
               </div>
-              <button class="secondary-button compact-button" id="refreshSavedMonthsButton" type="button">Atualizar</button>
+              <div class="saved-months-header-actions">
+                <button class="secondary-button compact-button" id="exportYearButton" type="button">CSV do ano</button>
+                <button class="secondary-button compact-button" id="refreshSavedMonthsButton" type="button">Atualizar</button>
+              </div>
             </header>
             <p class="field-hint saved-months-empty" id="savedMonthsEmpty">Nenhum mês salvo no banco ainda.</p>
             <ul class="saved-months-list" id="savedMonthsList" aria-label="Meses com orçamento salvo"></ul>
@@ -158,8 +161,8 @@
           <div class="chart-content">
             <figure class="chart-wrap">
               <canvas id="financeChart" aria-label="Gráfico de pizza com gastos e saldo" role="img"></canvas>
-              <figcaption class="sr-only">Distribuição entre gastos fixos, gastos variados e saldo restante.</figcaption>
               <p class="empty-state" id="chartEmpty">Informe o salário ou gastos para visualizar o gráfico.</p>
+              <figcaption class="sr-only">Distribuição entre gastos fixos, gastos variados e saldo restante.</figcaption>
             </figure>
             <ul class="chart-legend" id="chartLegend" aria-label="Legenda do gráfico"></ul>
           </div>

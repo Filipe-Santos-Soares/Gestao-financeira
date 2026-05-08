@@ -40,6 +40,9 @@
 - Ajustado o gráfico de evolução para mostrar apenas meses preenchidos do ano selecionado.
 - Adicionado indicador de alterações não salvas no painel.
 - Adicionadas ações para exportar orçamento mensal em CSV e excluir mês salvo.
+- Adicionada exportação CSV anual dos meses salvos no ano selecionado.
+- Ajustada a lista de meses salvos para mostrar apenas o ano selecionado.
+- Corrigidos apontamentos de validação HTML/acessibilidade no seletor de período e no gráfico principal.
 - Refinados os alertas visuais de metas a partir de 70% de uso.
 - Adicionado rate limit para tentativas inválidas de login e cadastro.
 - Adicionada expiração de sessão por inatividade.

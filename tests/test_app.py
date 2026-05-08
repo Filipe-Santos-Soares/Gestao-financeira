@@ -58,6 +58,7 @@ class AppTest(unittest.TestCase):
         self.assertIn(b"Login", response.data)
         self.assertIn("Mês".encode(), response.data)
         self.assertIn(b"Ano", response.data)
+        self.assertIn(b'role="group" aria-label="Per\xc3\xadodo do or\xc3\xa7amento"', response.data)
         self.assertIn(b"Salvar", response.data)
         self.assertNotIn(b'id="loadBudgetButton"', response.data)
         self.assertIn(b"Duplicar anterior", response.data)
@@ -66,6 +67,7 @@ class AppTest(unittest.TestCase):
         self.assertIn(b"Fechar aviso", response.data)
         self.assertIn(b"Meses salvos", response.data)
         self.assertIn(b'id="savedMonthsList"', response.data)
+        self.assertIn(b'id="exportYearButton"', response.data)
         self.assertIn(b"Entre meses", response.data)
         self.assertIn("Histórico mensal".encode(), response.data)
         self.assertIn(b"Gerenciar", response.data)
@@ -382,6 +384,70 @@ class AppTest(unittest.TestCase):
             self.assertIn("mes;ano;salario;tipo;descricao;categoria;valor", csv_text)
             self.assertIn("5;2026;3500.00;fixo;Aluguel;Moradia;1200.00", csv_text)
 
+    def test_export_year_budget_csv(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={
+                        "month": 5,
+                        "year": 2026,
+                        "salary": "3500,00",
+                        "fixed_expenses": [
+                            {"description": "Aluguel", "category": "Moradia", "amount": "1200,00"}
+                        ],
+                    },
+                )
+                self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={
+                        "month": 6,
+                        "year": 2026,
+                        "salary": "4200,00",
+                        "variable_expenses": [
+                            {"description": "Viagem", "category": "Lazer", "amount": "900,00"}
+                        ],
+                    },
+                )
+                self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={
+                        "month": 1,
+                        "year": 2027,
+                        "salary": "5000,00",
+                        "fixed_expenses": [
+                            {"description": "Condominio", "category": "Moradia", "amount": "700,00"}
+                        ],
+                    },
+                )
+                response = self.client.get("/api/year-budget/export?year=2026")
+
+            csv_text = response.get_data(as_text=True)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("text/csv", response.content_type)
+            self.assertIn("orcamentos-2026.csv", response.headers["Content-Disposition"])
+            self.assertIn("mes;ano;salario;tipo;descricao;categoria;valor", csv_text)
+            self.assertIn("5;2026;3500.00;fixo;Aluguel;Moradia;1200.00", csv_text)
+            self.assertIn("6;2026;4200.00;variado;Viagem;Lazer;900.00", csv_text)
+            self.assertNotIn("2027", csv_text)
+
+    def test_export_year_budget_not_found(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                response = self.client.get("/api/year-budget/export?year=2026")
+
+            self.assertEqual(response.status_code, 404)
+            self.assertIn("Nenhum orçamento salvo para este ano.", response.get_json()["message"])
+
     def test_delete_month_budget_endpoint(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
@@ -430,6 +496,7 @@ class AppTest(unittest.TestCase):
                 load_response = self.client.get("/api/month-budget?month=5&year=2026")
                 list_response = self.client.get("/api/month-budgets")
                 export_response = self.client.get("/api/month-budget/export?month=5&year=2026")
+                year_export_response = self.client.get("/api/year-budget/export?year=2026")
                 delete_response = self.client.post(
                     "/api/month-budget/delete",
                     headers=headers,
@@ -445,6 +512,7 @@ class AppTest(unittest.TestCase):
             self.assertFalse(load_response.get_json()["found"])
             self.assertEqual(list_response.get_json()["month_budgets"], [])
             self.assertEqual(export_response.status_code, 404)
+            self.assertEqual(year_export_response.status_code, 404)
             self.assertEqual(delete_response.status_code, 404)
             self.assertTrue(owner_load_response.get_json()["found"])
 

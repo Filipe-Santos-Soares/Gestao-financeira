@@ -56,6 +56,22 @@ def parse_current_period(payload=None):
     return month, year, None
 
 
+def parse_current_year(payload=None):
+    payload = payload or {}
+    now = datetime.now()
+    raw_year = payload.get("year") or request.args.get("year") or now.year
+
+    try:
+        year = int(raw_year)
+    except (TypeError, ValueError):
+        return None, "Ano deve ser um número válido."
+
+    if year < 1900 or year > 9999:
+        return None, "Informe um ano entre 1900 e 9999."
+
+    return year, None
+
+
 def get_repository():
     if DATABASE_BACKEND == "postgresql":
         repository = PostgreSQLBudgetRepository(DATABASE_URL)
@@ -194,6 +210,33 @@ def month_budget_list_item(repository, budget):
         "is_over_budget": summary["is_over_budget"],
         "updated_at": budget.updated_at,
     }
+
+
+def write_budget_expense_csv_rows(repository, writer, budget):
+    fixed_expenses = repository.list_expenses(budget.id, "fixed")
+    variable_expenses = repository.list_expenses(budget.id, "variable")
+
+    for expense_type, expenses in (("fixo", fixed_expenses), ("variado", variable_expenses)):
+        for expense in expenses:
+            writer.writerow(
+                [
+                    budget.month,
+                    budget.year,
+                    f"{float(budget.salary):.2f}",
+                    expense_type,
+                    expense.description,
+                    expense.category,
+                    f"{float(expense.amount):.2f}",
+                ]
+            )
+
+
+def csv_download_response(output, filename):
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @app.get("/")
@@ -431,33 +474,49 @@ def export_month_budget():
         if not budget:
             return jsonify({"exported": False, "message": "Nenhum orçamento salvo para este mês."}), 404
 
-        fixed_expenses = repository.list_expenses(budget.id, "fixed")
-        variable_expenses = repository.list_expenses(budget.id, "variable")
+        output = StringIO()
+        writer = csv.writer(output, delimiter=";")
+        writer.writerow(["mes", "ano", "salario", "tipo", "descricao", "categoria", "valor"])
+        write_budget_expense_csv_rows(repository, writer, budget)
+
+        filename = f"orcamento-{year}-{month:02d}.csv"
+
+        return csv_download_response(output, filename)
+    finally:
+        repository.close()
+
+
+@app.get("/api/year-budget/export")
+def export_year_budget():
+    year, year_error = parse_current_year()
+
+    if year_error:
+        return jsonify({"exported": False, "message": year_error}), 400
+
+    repository = get_repository()
+
+    try:
+        user = get_active_user(repository)
+        if not user:
+            return no_active_user_response()
+
+        budgets = [
+            budget
+            for budget in repository.list_month_budgets(user.id)
+            if budget.year == year
+        ]
+
+        if not budgets:
+            return jsonify({"exported": False, "message": "Nenhum orçamento salvo para este ano."}), 404
+
         output = StringIO()
         writer = csv.writer(output, delimiter=";")
         writer.writerow(["mes", "ano", "salario", "tipo", "descricao", "categoria", "valor"])
 
-        for expense_type, expenses in (("fixo", fixed_expenses), ("variado", variable_expenses)):
-            for expense in expenses:
-                writer.writerow(
-                    [
-                        budget.month,
-                        budget.year,
-                        f"{float(budget.salary):.2f}",
-                        expense_type,
-                        expense.description,
-                        expense.category,
-                        f"{float(expense.amount):.2f}",
-                    ]
-                )
+        for budget in sorted(budgets, key=lambda item: item.month):
+            write_budget_expense_csv_rows(repository, writer, budget)
 
-        filename = f"orcamento-{year}-{month:02d}.csv"
-
-        return Response(
-            output.getvalue(),
-            mimetype="text/csv; charset=utf-8",
-            headers={"Content-Disposition": f"attachment; filename={filename}"},
-        )
+        return csv_download_response(output, f"orcamentos-{year}.csv")
     finally:
         repository.close()
 

@@ -24,6 +24,7 @@ const feedbackPopupClose = document.querySelector("#feedbackPopupClose");
 const savedMonthsList = document.querySelector("#savedMonthsList");
 const savedMonthsEmpty = document.querySelector("#savedMonthsEmpty");
 const refreshSavedMonthsButton = document.querySelector("#refreshSavedMonthsButton");
+const exportYearButton = document.querySelector("#exportYearButton");
 const compareBaseMonth = document.querySelector("#compareBaseMonth");
 const compareTargetMonth = document.querySelector("#compareTargetMonth");
 const comparisonEmpty = document.querySelector("#comparisonEmpty");
@@ -353,6 +354,9 @@ function updateSavedMonthsActive() {
 }
 
 function renderSavedMonths(monthBudgets) {
+  const selectedYear = getSelectedPeriod().year;
+  const filteredBudgets = monthBudgets.filter((budget) => Number(budget.year) === selectedYear);
+
   savedMonthsList.innerHTML = "";
 
   if (!monthBudgets.length) {
@@ -361,9 +365,15 @@ function renderSavedMonths(monthBudgets) {
     return;
   }
 
+  if (!filteredBudgets.length) {
+    savedMonthsEmpty.hidden = false;
+    savedMonthsEmpty.textContent = `Nenhum mês salvo em ${selectedYear}.`;
+    return;
+  }
+
   savedMonthsEmpty.hidden = true;
 
-  monthBudgets.forEach((budget) => {
+  filteredBudgets.forEach((budget) => {
     const item = document.createElement("li");
     const button = document.createElement("button");
     const periodRow = document.createElement("span");
@@ -472,6 +482,22 @@ function exportSavedMonth(budget) {
   });
 
   window.location.href = `/api/month-budget/export?${params.toString()}`;
+}
+
+function exportSelectedYear() {
+  const selectedYear = getSelectedPeriod().year;
+  const hasSavedMonthInYear = savedMonthBudgets.some((budget) => Number(budget.year) === selectedYear);
+
+  if (!hasSavedMonthInYear) {
+    showFeedbackPopup(`Nenhum mês salvo em ${selectedYear} para exportar.`);
+    return;
+  }
+
+  const params = new URLSearchParams({
+    year: selectedYear,
+  });
+
+  window.location.href = `/api/year-budget/export?${params.toString()}`;
 }
 
 async function deleteSavedMonth(budget) {
@@ -1369,6 +1395,7 @@ saveBudgetButton.addEventListener("click", saveBudgetToDatabase);
 duplicatePreviousButton.addEventListener("click", duplicatePreviousMonth);
 feedbackPopupClose.addEventListener("click", hideFeedbackPopup);
 refreshSavedMonthsButton.addEventListener("click", loadSavedMonths);
+exportYearButton.addEventListener("click", exportSelectedYear);
 compareBaseMonth.addEventListener("change", renderComparison);
 compareTargetMonth.addEventListener("change", renderComparison);
 categoryForm.addEventListener("submit", saveCategory);
@@ -1390,6 +1417,7 @@ periodMonthInput.addEventListener("change", () => {
 periodYearInput.addEventListener("input", () => {
   hideFeedbackPopup();
   updatePeriodLabel();
+  renderSavedMonths(savedMonthBudgets);
   updateSavedMonthsActive();
   renderEvolutionChart();
   saveState();

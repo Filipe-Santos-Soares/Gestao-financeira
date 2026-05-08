@@ -496,6 +496,9 @@ Status atual:
 - A interface sinaliza quando existem alteracoes ainda nao salvas no banco.
 - Meses salvos podem ser exportados em CSV e excluidos pelo usuario.
 - O historico mensal passa a exibir apenas meses preenchidos do ano selecionado.
+- A lista de meses salvos passa a filtrar os registros pelo ano selecionado.
+- O usuario pode exportar em CSV todos os meses salvos do ano selecionado.
+- Ajustes de HTML/acessibilidade foram aplicados nos controles de periodo e no grafico principal.
 - Tentativas invalidas de login e cadastro passam a ter bloqueio temporario por rate limit.
 - Sessoes passam a expirar por inatividade, com tempo configuravel por ambiente.
 - Headers de seguranca HTTP foram adicionados para reduzir riscos de clickjacking, content sniffing e carregamento indevido de recursos.
