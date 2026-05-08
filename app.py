@@ -30,7 +30,7 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = IS_PRODUCTION
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(seconds=SESSION_IDLE_TIMEOUT_SECONDS)
-APP_VERSION = "1.1"
+APP_VERSION = "1.2"
 app.register_blueprint(auth_bp)
 
 
@@ -101,7 +101,7 @@ def get_active_user(repository):
 
 
 def no_active_user_response():
-    return jsonify({"message": "Crie uma conta ou faça login para usar esta ação."}), 401
+    return jsonify({"message": "Sessão expirada ou acesso indisponível. Faça login para continuar."}), 401
 
 
 def invalid_csrf_response():

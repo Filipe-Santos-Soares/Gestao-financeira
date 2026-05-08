@@ -1,6 +1,13 @@
 # Changelog
 
-## 1.1 - Em desenvolvimento
+## 1.2 - Em desenvolvimento
+
+- Iniciada fase de ajustes finais com foco em histórico, erros e organização de release.
+- Melhorada a leitura do histórico anual com ano e quantidade de meses preenchidos.
+- Melhoradas mensagens de erro em falhas de carregamento, salvamento e duplicação.
+- Atualizada a versão da aplicação para 1.2.
+
+## 1.1 - 2026-05-08
 
 - Adicionada preparação inicial para banco de dados.
 - Criados modelos de domínio para usuário, planejamento mensal, gasto e categoria.

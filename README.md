@@ -2,7 +2,7 @@
 
 Aplicativo Flask para controle financeiro mensal com salário, gastos fixos, gastos variados, resumo, gráficos, histórico mensal, categorias gerenciáveis, metas opcionais por categoria e exportação CSV mensal/anual.
 
-Versão atual: 1.1
+Versão atual: 1.2
 
 ## Execução local
 

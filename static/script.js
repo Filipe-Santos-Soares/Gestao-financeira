@@ -22,6 +22,8 @@ const feedbackPopup = document.querySelector("#feedbackPopup");
 const feedbackPopupMessage = document.querySelector("#feedbackPopupMessage");
 const feedbackPopupClose = document.querySelector("#feedbackPopupClose");
 const savedMonthsList = document.querySelector("#savedMonthsList");
+const savedMonthsTitle = document.querySelector("#savedMonthsTitle");
+const savedMonthsMeta = document.querySelector("#savedMonthsMeta");
 const savedMonthsEmpty = document.querySelector("#savedMonthsEmpty");
 const refreshSavedMonthsButton = document.querySelector("#refreshSavedMonthsButton");
 const exportYearButton = document.querySelector("#exportYearButton");
@@ -194,6 +196,15 @@ function jsonHeaders(includeCsrf = false) {
   return headers;
 }
 
+async function getResponseMessage(response, fallback) {
+  try {
+    const data = await response.clone().json();
+    return data.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function periodKey(budget) {
   return `${budget.year}-${String(budget.month).padStart(2, "0")}`;
 }
@@ -358,10 +369,14 @@ function renderSavedMonths(monthBudgets) {
   const filteredBudgets = monthBudgets.filter((budget) => Number(budget.year) === selectedYear);
 
   savedMonthsList.innerHTML = "";
+  savedMonthsTitle.textContent = `Meses salvos em ${selectedYear}`;
+  savedMonthsMeta.textContent = `${filteredBudgets.length} de 12 mês(es) preenchido(s).`;
+  exportYearButton.disabled = filteredBudgets.length === 0;
 
   if (!monthBudgets.length) {
     savedMonthsEmpty.hidden = false;
     savedMonthsEmpty.textContent = "Nenhum mês salvo no banco ainda.";
+    savedMonthsMeta.textContent = "Sem histórico salvo.";
     return;
   }
 
@@ -440,10 +455,10 @@ function renderSavedMonths(monthBudgets) {
   updateSavedMonthsActive();
 }
 
-function showSavedMonthsError() {
-  const message = "Não foi possível carregar os meses salvos. Clique em Atualizar para tentar novamente.";
-
+function showSavedMonthsError(message = "Não foi possível carregar os meses salvos. Clique em Atualizar para tentar novamente.") {
   savedMonthsList.innerHTML = "";
+  savedMonthsMeta.textContent = "Histórico indisponível.";
+  exportYearButton.disabled = true;
   savedMonthsEmpty.hidden = false;
   savedMonthsEmpty.textContent = message;
   showFeedbackPopup(message);
@@ -458,7 +473,8 @@ async function loadSavedMonths() {
     const response = await fetch("/api/month-budgets");
 
     if (!response.ok) {
-      showSavedMonthsError();
+      const message = await getResponseMessage(response, "Não foi possível carregar os meses salvos.");
+      showSavedMonthsError(message);
       return;
     }
 
@@ -1070,7 +1086,7 @@ async function saveBudgetToDatabase() {
     });
 
     if (!response.ok) {
-      statusMessage.textContent = "Não foi possível salvar no banco de dados.";
+      statusMessage.textContent = await getResponseMessage(response, "Não foi possível salvar no banco de dados.");
       statusMessage.classList.add("is-negative");
       return;
     }
@@ -1104,9 +1120,10 @@ async function loadBudgetFromDatabase(options = {}) {
     const response = await fetch(`/api/month-budget?${params.toString()}`);
 
     if (!response.ok) {
-      statusMessage.textContent = "Não foi possível carregar os dados do banco.";
+      const message = await getResponseMessage(response, "Não foi possível carregar os dados do banco.");
+      statusMessage.textContent = message;
       statusMessage.classList.add("is-negative");
-      showFeedbackPopup("Não foi possível carregar os dados do banco.");
+      showFeedbackPopup(message);
       return;
     }
 
@@ -1179,9 +1196,10 @@ async function duplicatePreviousMonth() {
     const response = await fetch(`/api/month-budget?${params.toString()}`);
 
     if (!response.ok) {
-      statusMessage.textContent = "Não foi possível duplicar o mês anterior.";
+      const message = await getResponseMessage(response, "Não foi possível duplicar o mês anterior.");
+      statusMessage.textContent = message;
       statusMessage.classList.add("is-negative");
-      showFeedbackPopup("Não foi possível duplicar o mês anterior.");
+      showFeedbackPopup(message);
       return;
     }
 
@@ -1431,7 +1449,6 @@ window.addEventListener("beforeunload", (event) => {
   event.preventDefault();
   event.returnValue = "";
 });
-
 restoreState();
 refreshSummary();
 loadSavedMonths();

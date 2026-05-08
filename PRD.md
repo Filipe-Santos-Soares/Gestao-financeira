@@ -525,10 +525,17 @@ Pendencias de refinamento pos-deploy:
 
 ### Versao 10 - Configuracoes do aplicativo
 
-- Avaliar a criacao de uma pagina ou area dedicada de configuracoes.
-- Possiveis itens: conta, login/sessao, categorias, metas, preferencias da interface e opcoes de exportacao.
-- A decisao de layout e escopo deve ser feita antes da implementacao para evitar sobrecarregar o painel principal.
-- Esta versao deve ser tratada como planejamento futuro; nao faz parte das melhorias imediatas.
+- Avaliar a criacao de uma pagina, aba ou area dedicada de configuracoes apenas quando houver necessidade clara.
+- Possiveis itens futuros: conta, login/sessao, categorias, metas, preferencias da interface e opcoes de exportacao.
+- Status atual: nao implementar por enquanto, pois a configuracao se mostrou desnecessaria para o fluxo atual.
+- Login e sair/deslogar permanecem no topo do painel principal.
+
+### Versao 11 - Ajustes finais 1.2
+
+- Refinar a experiencia do historico anual.
+- Melhorar estados de erro e mensagens de sessao.
+- Manter a responsividade mobile avancada fora desta fase.
+- Organizar changelog e documentacao para separar a versao 1.1 concluida da versao 1.2 em desenvolvimento.
 
 ## 14. Criterios Gerais de Sucesso
 
