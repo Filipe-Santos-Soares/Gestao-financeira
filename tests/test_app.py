@@ -607,6 +607,35 @@ class AppTest(unittest.TestCase):
             self.assertEqual(duplicate_response.status_code, 409)
             self.assertFalse(data["created"])
 
+    def test_create_category_rejects_invalid_payload(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                invalid_type_response = self.client.post(
+                    "/api/categories",
+                    headers=headers,
+                    json={"name": "Moradia", "type": "outro"},
+                )
+                invalid_goal_response = self.client.post(
+                    "/api/categories",
+                    headers=headers,
+                    json={"name": "Moradia", "type": "fixed", "goal_amount": "valor"},
+                )
+                long_name_response = self.client.post(
+                    "/api/categories",
+                    headers=headers,
+                    json={"name": "M" * 41, "type": "fixed"},
+                )
+
+            self.assertEqual(invalid_type_response.status_code, 400)
+            self.assertIn("Tipo de categoria inválido.", invalid_type_response.get_json()["message"])
+            self.assertEqual(invalid_goal_response.status_code, 400)
+            self.assertIn("Meta mensal deve ser", invalid_goal_response.get_json()["message"])
+            self.assertEqual(long_name_response.status_code, 400)
+            self.assertIn("no máximo 40 caracteres", long_name_response.get_json()["message"])
+
     def test_update_and_delete_category(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "app.db"
@@ -728,6 +757,66 @@ class AppTest(unittest.TestCase):
             self.assertIn("mês entre 1 e 12", invalid_month_response.get_json()["message"])
             self.assertEqual(invalid_year_response.status_code, 400)
             self.assertIn("ano entre 1900 e 9999", invalid_year_response.get_json()["message"])
+
+    def test_month_budget_rejects_invalid_payload(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                invalid_salary_response = self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={"month": 5, "year": 2026, "salary": "valor"},
+                )
+                invalid_expenses_response = self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={"month": 5, "year": 2026, "salary": "1000,00", "fixed_expenses": "Aluguel"},
+                )
+                missing_amount_response = self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={
+                        "month": 5,
+                        "year": 2026,
+                        "salary": "1000,00",
+                        "fixed_expenses": [{"description": "Aluguel", "amount": ""}],
+                    },
+                )
+
+            self.assertEqual(invalid_salary_response.status_code, 400)
+            self.assertIn("Salário deve ser", invalid_salary_response.get_json()["message"])
+            self.assertEqual(invalid_expenses_response.status_code, 400)
+            self.assertIn("devem ser enviados em uma lista", invalid_expenses_response.get_json()["message"])
+            self.assertEqual(missing_amount_response.status_code, 400)
+            self.assertIn("Informe o valor do gasto fixo #1.", missing_amount_response.get_json()["message"])
+
+    def test_month_budget_ignores_blank_expense_rows(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "app.db"
+
+            with patch.object(app_module, "DATABASE_PATH", database_path):
+                headers = self.csrf_headers()
+                save_response = self.client.post(
+                    "/api/month-budget",
+                    headers=headers,
+                    json={
+                        "month": 5,
+                        "year": 2026,
+                        "salary": "1000,00",
+                        "fixed_expenses": [
+                            {"description": "", "category": "", "amount": ""},
+                            {"description": "Aluguel", "category": "Moradia", "amount": "500,00"},
+                        ],
+                    },
+                )
+
+            data = save_response.get_json()
+
+            self.assertEqual(save_response.status_code, 200)
+            self.assertEqual(len(data["fixed_expenses"]), 1)
+            self.assertEqual(data["fixed_expenses"][0]["description"], "Aluguel")
 
     def test_save_and_load_different_month_budgets(self):
         with tempfile.TemporaryDirectory() as temp_dir:

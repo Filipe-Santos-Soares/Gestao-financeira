@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime, timedelta
+from datetime import timedelta
 from io import StringIO
 
 from flask import jsonify, Flask, render_template, request, Response, session
@@ -21,6 +21,7 @@ from config import (
 from finance_logic import calculate_summary
 from repositories import PostgreSQLBudgetRepository, SQLiteBudgetRepository
 from security import get_csrf_token, get_request_csrf_token, is_valid_csrf_token, refresh_session_activity
+from validation import parse_period, parse_year, validate_category_payload, validate_month_budget_payload
 
 
 validate_runtime_config()
@@ -35,41 +36,11 @@ app.register_blueprint(auth_bp)
 
 
 def parse_current_period(payload=None):
-    payload = payload or {}
-    now = datetime.now()
-
-    raw_month = payload.get("month") or request.args.get("month") or now.month
-    raw_year = payload.get("year") or request.args.get("year") or now.year
-
-    try:
-        month = int(raw_month)
-        year = int(raw_year)
-    except (TypeError, ValueError):
-        return None, None, "Mês e ano devem ser números válidos."
-
-    if month < 1 or month > 12:
-        return None, None, "Informe um mês entre 1 e 12."
-
-    if year < 1900 or year > 9999:
-        return None, None, "Informe um ano entre 1900 e 9999."
-
-    return month, year, None
+    return parse_period(payload, request.args)
 
 
 def parse_current_year(payload=None):
-    payload = payload or {}
-    now = datetime.now()
-    raw_year = payload.get("year") or request.args.get("year") or now.year
-
-    try:
-        year = int(raw_year)
-    except (TypeError, ValueError):
-        return None, "Ano deve ser um número válido."
-
-    if year < 1900 or year > 9999:
-        return None, "Informe um ano entre 1900 e 9999."
-
-    return year, None
+    return parse_year(payload, request.args)
 
 
 def get_repository():
@@ -290,15 +261,14 @@ def list_categories():
 @app.post("/api/categories")
 def create_category():
     payload = request.get_json(silent=True) or {}
-    name = str(payload.get("name", "")).strip()
-    category_type = str(payload.get("type", "both")).strip() or "both"
-    goal_amount = payload.get("goal_amount", "")
+    category_payload, validation_error = validate_category_payload(payload)
 
-    if category_type not in {"fixed", "variable", "both"}:
-        return jsonify({"created": False, "message": "Tipo de categoria inválido."}), 400
+    if validation_error:
+        return jsonify({"created": False, "message": validation_error}), 400
 
-    if not name:
-        return jsonify({"created": False, "message": "Informe o nome da categoria."}), 400
+    name = category_payload["name"]
+    category_type = category_payload["type"]
+    goal_amount = category_payload["goal_amount"]
 
     repository = get_repository()
 
@@ -332,15 +302,14 @@ def create_category():
 @app.post("/api/categories/<int:category_id>/update")
 def update_category(category_id):
     payload = request.get_json(silent=True) or {}
-    name = str(payload.get("name", "")).strip()
-    category_type = str(payload.get("type", "both")).strip() or "both"
-    goal_amount = payload.get("goal_amount", "")
+    category_payload, validation_error = validate_category_payload(payload)
 
-    if category_type not in {"fixed", "variable", "both"}:
-        return jsonify({"updated": False, "message": "Tipo de categoria inválido."}), 400
+    if validation_error:
+        return jsonify({"updated": False, "message": validation_error}), 400
 
-    if not name:
-        return jsonify({"updated": False, "message": "Informe o nome da categoria."}), 400
+    name = category_payload["name"]
+    category_type = category_payload["type"]
+    goal_amount = category_payload["goal_amount"]
 
     repository = get_repository()
 
@@ -524,14 +493,16 @@ def export_year_budget():
 @app.post("/api/month-budget")
 def save_month_budget():
     payload = request.get_json(silent=True) or {}
-    month, year, period_error = parse_current_period(payload)
+    budget_payload, validation_error = validate_month_budget_payload(payload)
 
-    if period_error:
-        return jsonify({"saved": False, "message": period_error}), 400
+    if validation_error:
+        return jsonify({"saved": False, "message": validation_error}), 400
 
-    salary = payload.get("salary", 0)
-    fixed_expenses = payload.get("fixed_expenses", [])
-    variable_expenses = payload.get("variable_expenses", [])
+    month = budget_payload["month"]
+    year = budget_payload["year"]
+    salary = budget_payload["salary"]
+    fixed_expenses = budget_payload["fixed_expenses"]
+    variable_expenses = budget_payload["variable_expenses"]
 
     repository = get_repository()
 

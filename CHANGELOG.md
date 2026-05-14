@@ -1,10 +1,13 @@
 # Changelog
 
-## 1.2 - Em desenvolvimento
+## 1.2 - 2026-05-14
 
 - Iniciada fase de ajustes finais com foco em histórico, erros e organização de release.
 - Melhorada a leitura do histórico anual com ano e quantidade de meses preenchidos.
 - Melhoradas mensagens de erro em falhas de carregamento, salvamento e duplicação.
+- Centralizadas validações de período, categorias, valores monetários e payloads de orçamento mensal.
+- Adicionados testes para payloads inválidos de categorias e orçamento mensal.
+- Refinada a documentação mínima do projeto e o fluxo recomendado de versionamento.
 - Atualizada a versão da aplicação para 1.2.
 
 ## 1.1 - 2026-05-08
