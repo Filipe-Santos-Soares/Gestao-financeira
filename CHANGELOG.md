@@ -6,8 +6,9 @@
 - Melhorada a leitura do histórico anual com ano e quantidade de meses preenchidos.
 - Melhoradas mensagens de erro em falhas de carregamento, salvamento e duplicação.
 - Centralizadas validações de período, categorias, valores monetários e payloads de orçamento mensal.
-- Adicionados testes para payloads inválidos de categorias e orçamento mensal.
+- Adicionados testes para payloads inválidos de categorias, orçamento mensal e validações isoladas.
 - Refinada a documentação mínima do projeto e o fluxo recomendado de versionamento.
+- Concluída a etapa de organização de código, versionamento, validação e documentação mínima da versão 1.2.
 - Atualizada a versão da aplicação para 1.2.
 
 ## 1.1 - 2026-05-08

@@ -535,7 +535,16 @@ Pendencias de refinamento pos-deploy:
 - Refinar a experiencia do historico anual.
 - Melhorar estados de erro e mensagens de sessao.
 - Manter a responsividade mobile avancada fora desta fase.
-- Organizar changelog e documentacao para separar a versao 1.1 concluida da versao 1.2 em desenvolvimento.
+- Fortalecer praticas de organizacao de codigo, versionamento, validacao e documentacao minima.
+
+Status atual:
+
+- Etapa concluida na versao 1.2.
+- Historico anual, mensagens de erro e organizacao de release foram refinados.
+- Validacoes de periodo, categorias, valores monetarios e payloads de orcamento mensal foram centralizadas em `validation.py`.
+- Testes automatizados cobrem payloads invalidos e validacoes isoladas.
+- `README.md` e `CHANGELOG.md` foram refinados como documentacao minima suficiente para o projeto solo.
+- Responsividade mobile avancada permanece fora desta fase.
 
 ## 14. Criterios Gerais de Sucesso
 
